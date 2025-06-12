@@ -50,13 +50,13 @@ https://github.com/coreybutler/nvm-windows
 
 点击右侧的Releases
 
-![v](E:\SLT\AI\ai-module\images\nvm.png)
+![v](images\nvm.png)
 
 
 
 下载带安装器的.exe文件（如nvm-setup.exe)，并运行安装
 
-![vm](E:\SLT\AI\ai-module\images\nvm2.png)
+![v](images\nvm2.png)
 
 安装完成后，在终端中输入以下内容，验证是否安装成功：
 
@@ -85,7 +85,7 @@ nvm use 20.17.0
 
 jdk版本选择17
 
-![ave](E:\SLT\AI\ai-module\images\maven.png)
+![ave](images\maven.png)
 
 
 
@@ -244,7 +244,7 @@ public class Application {
 
 node.js版本选择20.17.0
 
-![u](E:\SLT\AI\ai-module\images\vue.png)
+![u](images\vue.png)
 
 在终端中运行以下代码下载必要包：
 
@@ -361,12 +361,12 @@ export default {
 
 ## 1.启动后端Application启动项
 
-![un](E:\SLT\AI\ai-module\images\run1.png)
+![un](images\run1.png)
 
 ## 2.启动前端
 
-![un](E:\SLT\AI\ai-module\images\run2.png)
+![un](images\run2.png)
 
 ## 3.成功访问页面
 
-![un](E:\SLT\AI\ai-module\images\run3.png)
+![un](images\run3.png)
