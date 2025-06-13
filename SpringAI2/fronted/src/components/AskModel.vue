@@ -35,6 +35,7 @@ export default {
     return {
       question: '',
       loading: false,
+      sessionId: '',
       messages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
       ]
@@ -50,20 +51,49 @@ export default {
       this.question = '';
       try {
         const response = await axios.post('http://localhost:8080/api/llm/ask', {
-          inputs: {},
-          query: q,
-          response_mode: 'blocking',
-          conversation_id: '',
-          user: 'abc-123',
-          answer: ''
+          message: q,
+          sessionId: this.sessionId || '',
+          userId: 'user-' + Date.now()
         });
-        this.messages.push({ role: 'ai', text: response.data.answer || JSON.stringify(response.data, null, 2) });
+        
+        let aiResponse = '';
+        if (response.data && response.data.answer) {
+          aiResponse = response.data.answer;
+          // 处理换行符
+          aiResponse = aiResponse.replace(/\\n/g, '\n');
+          // 移除末尾的 "//"
+          if (aiResponse.endsWith("//")) {
+            aiResponse = aiResponse.substring(0, aiResponse.length() - 2);
+          }
+        } else if (response.data && response.data.error) {
+          aiResponse = '错误: ' + response.data.error;
+        } else {
+          aiResponse = '抱歉，我无法理解这个回答。';
+        }
+        
+        this.messages.push({ role: 'ai', text: aiResponse });
       } catch (error) {
-        this.messages.push({ role: 'ai', text: '请求失败: ' + error.message });
+        console.error('Error:', error);
+        let errorMessage = '请求失败';
+        if (error.response) {
+          if (error.response.data && error.response.data.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+          } else {
+            errorMessage = error.response.data || error.response.statusText;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        this.messages.push({ role: 'ai', text: errorMessage });
       } finally {
         this.loading = false;
       }
     }
+  },
+  created() {
+    this.sessionId = 'session-' + Date.now();
   }
 };
 </script>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <!-- 本地仓库，该值表示构建系统本地仓库的路径，其默认值为${user.home}/.m2/repository -->
+  <localRepository>C:\Users\deng\.m2\repository</localRepository>
+  <pluginGroups>
+  </pluginGroups>
+
+  <proxies>
+    
+  </proxies>
+
+  <servers>
+    <!-- 配置本地仓库访问私服的权限  nexus的 登录用户名密码 -->
+	  <server>
+		  <id>slt-maven</id>
+		  <username>admin</username>
+		  <password>slt123456#</password>
+	  </server>
+
+  </servers>
+
+<mirrors>
+    <!-- 使用私服镜像优先 -->
+    <mirror>
+        <id>slt-maven</id>
+        <mirrorOf>central,!spring-milestones</mirrorOf>
+        <name>hsaf-slt-release</name>
+        <url>http://192.168.31.68:8083/repository/hsaf-slt-release/</url>
+    </mirror>
+
+    <!-- Spring 官方 milestone 仓库 -->
+    <mirror>
+        <id>spring-milestones</id>
+        <mirrorOf>spring-milestones</mirrorOf>
+        <url>https://repo.spring.io/milestone</url>
+    </mirror>
+
+    <!-- Maven 官方中央仓库 -->
+    <mirror>
+        <id>maven-central</id>
+        <mirrorOf>central</mirrorOf>
+        <url>https://repo.maven.apache.org/maven2</url>
+    </mirror>
+</mirrors>
+
+
+  <profiles>
+ 
+    <profile> 
+	<id>nexus</id>
+     <repositories>
+         
+		 
+		<repository>
+			<id>slt-maven</id>
+			<name>hsaf-slt-release</name>
+           <url>http://192.168.31.68:8083/repository/hsaf-slt-release/</url>
+		    <releases>
+               <enabled>true</enabled>
+           </releases>
+		   <snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+         </repository>
+		 
+
+ 
+	</repositories>
+    </profile>
+
+  </profiles>
+
+  <!--激活私库配置-->
+	<activeProfiles>
+		<!--profile下的id-->
+		<activeProfile>nexus</activeProfile>
+	</activeProfiles>  
+</settings>

@@ -1,0 +1,36 @@
+ {
+    "inputs": {},
+    "query": "就业人事档案有哪些？",
+    "response_mode": "blocking",
+    "conversation_id": "",
+    "user": "abc-123",
+    "answer": ""
+   }
+
+Json:{
+    "event": "message",
+    "task_id": "85701df4-8926-4555-b027-f278459e1d4e",
+    "id": "7536bba0-3db3-46d7-a7b3-ddd36d26158e",
+    "message_id": "7536bba0-3db3-46d7-a7b3-ddd36d26158e",
+    "conversation_id": "6152d3e1-fe15-4826-9489-22cf537ace7a",
+    "mode": "advanced-chat",
+    "answer": "就业人事档案包括以下内容：\n\n1. 个人基本信息：包括姓名、性别、出生日期、身份证号码等。\n\n2. 学历信息：包括毕业院校、专业、学历层次、学位等。\n\n3. 工作经历：包括工作单位、职务、工作时间等。\n\n4. 培训经历：包括参加的培训项目、培训时间、培训机构等。\n\n5. 职业技能证书：包括获得的职业资格证书、职业技能等级证书等。\n\n6. 社会保险信息：包括养老保险、医疗保险、失业保险、工伤保险、生育保险等。\n\n7. 其他相关信息：如家庭成员信息、政治面貌、健康状况等。\n\n以上就是一般情况下，就业人事档案所包含的内容。具体到每个单位或地区，可能会有所差异。//",
+    "metadata": {
+        "usage": {
+            "prompt_tokens": 26,
+            "prompt_unit_price": "0.02",
+            "prompt_price_unit": "0.001",
+            "prompt_price": "0.0005200",
+            "completion_tokens": 166,
+            "completion_unit_price": "0.02",
+            "completion_price_unit": "0.001",
+            "completion_price": "0.0033200",
+            "total_tokens": 192,
+            "total_price": "0.0038400",
+            "currency": "RMB",
+            "latency": 8.423509080006625
+        }
+    },
+    "created_at": 1749535030
+}
+
