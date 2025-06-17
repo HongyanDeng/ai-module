@@ -18,7 +18,7 @@ public class ConversationHistory {
     @Id
     @GeneratedValue(generator = "uuid2")
     @GenericGenerator(name = "uuid2", strategy = "org.hibernate.id.UUIDGenerator")
-    @Column(name = "id", columnDefinition = "VARCHAR(36)", nullable = false)
+    @Column(name = "id", columnDefinition = "VARCHAR(255)", nullable = false)
     private String id;
 
     @Column(name = "conversation_id") // This will now store the AI's ongoing conversation ID

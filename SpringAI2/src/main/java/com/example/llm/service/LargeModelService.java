@@ -29,7 +29,7 @@ public class LargeModelService {
     /**
      * slt OCR工作流密钥
      */
-    private static final String API_KEY = "app-xHC0zjFEdqcyeTGhZBoEOcEa";
+    private static final String API_KEY = "Bearer app-xHC0zjFEdqcyeTGhZBoEOcEa";
 
 
     private final ObjectMapper objectMapper = new ObjectMapper();
