@@ -8,11 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -38,19 +36,19 @@ public class LargeModelController {
             }
 
             // 确定用于数据库历史记录的会话ID (来自前端或新的时间戳式ID)
-            String currentSessionId = (frontendSessionId != null && !frontendSessionId.isEmpty()) ? 
+            String currentSessionId = (frontendSessionId != null && !frontendSessionId.isEmpty()) ?
                 frontendSessionId : "session-" + System.currentTimeMillis();
-            
+
             // 确定最终的用户ID
-            String finalUserId = (userId != null && !userId.isEmpty()) ? 
+            String finalUserId = (userId != null && !userId.isEmpty()) ?
                 userId : "default-user";
 
             // 使用 currentSessionId 获取历史记录
             List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(currentSessionId);
-            
+
             // 总是发送空字符串作为 conversation_id 给 AI 服务，让AI服务自己管理。
             // 这样处理是基于 ai.txt 中请求示例的 conversation_id 为空字符串的假设。
-            String conversationIdForAI = ""; 
+            String conversationIdForAI = "";
 
             // 保存用户消息
             ConversationHistory userMessage = new ConversationHistory();

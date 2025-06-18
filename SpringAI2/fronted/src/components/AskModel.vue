@@ -10,21 +10,14 @@
       </div>
       
       <div class="conversation-list">
-        <div 
-          v-for="(conversation, index) in conversations" 
-          :key="conversation.id"
+        <div v-for="(conversation, index) in conversations" :key="conversation.id"
           :class="['conversation-item', { active: currentConversationId === conversation.id }]"
-          @click="switchConversation(conversation.id)"
-        >
+          @click="switchConversation(conversation.id)">
           <div class="conversation-info">
             <div class="conversation-title">{{ conversation.title || '新对话' }}</div>
             <div class="conversation-time">{{ formatTime(conversation.createdAt) }}</div>
           </div>
-          <button 
-            class="delete-btn" 
-            @click.stop="deleteConversation(conversation.id)"
-            v-if="conversations.length > 1"
-          >
+          <button class="delete-btn" @click.stop="deleteConversation(conversation.id)" v-if="conversations.length > 1">
             🗑️
           </button>
         </div>
@@ -36,11 +29,11 @@
       <div class="chat-content">
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
-            <span ></span>
+            <span></span>
             <span class="ai-text">{{ msg.text }}</span>
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
-            <span ></span>
+            <span></span>
             <span class="user-text">{{ msg.text }}</span>
           </div>
         </div>
@@ -53,8 +46,8 @@
       </div>
       <div class="chat-input-bar">
         <input v-model="question" placeholder="询问任何问题" @keyup.enter="askModel" />
-        <button class="send-file" @click="sendFile">📂</button> 
-        <button class="ask-model" @click="askModel">⬆</button> 
+        <button class="send-file" @click="sendFile">📂</button>
+        <button class="ask-model" @click="askModel">⬆</button>
       </div>
     </div>
   </div>
@@ -110,9 +103,11 @@ export default {
         }
 
         this.currentMessages.push({ role: 'ai', text: aiResponse });
-        
+
         // 更新当前对话的标题（使用第一条用户消息）
         this.updateConversationTitle(q);
+        await this.$nextTick();
+        this.scrollToBottom();
       } catch (error) {
         console.error('Error:', error);
         let errorMessage = '请求失败';
@@ -132,7 +127,12 @@ export default {
         this.loading = false;
       }
     },
-    
+    scrollToBottom() {
+      const container = this.$refs.messagesContainer || document.querySelector('.chat-content');
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    },
     createNewChat() {
       const newConversation = {
         id: 'conv-' + Date.now(),
@@ -140,11 +140,11 @@ export default {
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
         createdAt: new Date()
       };
-      
+
       this.conversations.push(newConversation);
       this.switchConversation(newConversation.id);
     },
-    
+
     switchConversation(conversationId) {
       this.currentConversationId = conversationId;
       const conversation = this.conversations.find(c => c.id === conversationId);
@@ -153,24 +153,24 @@ export default {
         this.sessionId = 'session-' + conversationId;
       }
     },
-    
+
     deleteConversation(conversationId) {
       if (this.conversations.length <= 1) {
         alert('至少需要保留一个对话');
         return;
       }
-      
+
       const index = this.conversations.findIndex(c => c.id === conversationId);
       if (index > -1) {
         this.conversations.splice(index, 1);
-        
+
         // 如果删除的是当前对话，切换到第一个对话
         if (this.currentConversationId === conversationId) {
           this.switchConversation(this.conversations[0].id);
         }
       }
     },
-    
+
     updateConversationTitle(firstMessage) {
       const conversation = this.conversations.find(c => c.id === this.currentConversationId);
       if (conversation && !conversation.title || conversation.title === '新对话') {
@@ -178,12 +178,12 @@ export default {
         conversation.title = firstMessage.length > 20 ? firstMessage.substring(0, 20) + '...' : firstMessage;
       }
     },
-    
+
     formatTime(timestamp) {
       const date = new Date(timestamp);
       const now = new Date();
       const diff = now - date;
-      
+
       if (diff < 60000) { // 1分钟内
         return '刚刚';
       } else if (diff < 3600000) { // 1小时内
@@ -203,7 +203,7 @@ export default {
       messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
       createdAt: new Date()
     };
-    
+
     this.conversations.push(initialConversation);
     this.currentConversationId = initialConversation.id;
     this.sessionId = 'session-' + this.currentConversationId;
@@ -224,52 +224,14 @@ export default {
 </script>
 
 <style scoped>
-/* 优化消息容器布局 */
-.messages {
-  padding: 20px 12% !important;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-/* 增强消息卡片视觉效果 */
-.message {
-  max-width: 88%;
-  margin-bottom: 0;
-  transition: all 0.2s ease;
-}
-
-.message:hover {
-  transform: scale(1.008);
-}
-
 @keyframes dot-animation {
-  0%, 100% { opacity: 0.3 }
-  50% { opacity: 1 }
-}
-
-/* 优化字体排版 */
-.message-content {
-  font-size: 15px;
-  line-height: 1.7;
-  padding: 16px 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell;
-}
-
-/* 调整头像尺寸和间距 */
-.message-avatar {
-  width: 36px !important;
-  height: 36px !important;
-  font-size: 13px !important;
-  margin: 0 14px !important;
-}
-
-/* 优化输入容器设计 */
-.input-container {
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 -4px 20px rgba(79, 140, 255, 0.06);
+  0%,
+  100% {
+    opacity: 0.3
+  }
+  50% {
+    opacity: 1
+  }
 }
 
 html,
@@ -344,7 +306,7 @@ body {
 
 .chat-content {
   flex: 1;
-  width:1200px;
+  width: 1200px;
   margin-left: 80px;
   padding-left: 10px;
   background-color: rgb(255, 255, 255);
@@ -377,10 +339,13 @@ body {
   margin-left: 10px;
   border-radius: 20px;
   background: #4f8cff;
-  font-size: 24px;  /* 增大字体 */
+  font-size: 24px;
+  /* 增大字体 */
   /*font-weight: bold;  /* 加粗 */
-  color: white;  /* 白色文字 */
-  line-height: 50px; /* 垂直居中 */
+  color: white;
+  /* 白色文字 */
+  line-height: 50px;
+  /* 垂直居中 */
 }
 
 /**上传文件按钮 */
@@ -390,10 +355,13 @@ body {
   margin-left: 10px;
   border-radius: 20px;
   background: #4f8cff;
-  font-size: 24px;  /* 增大字体 */
+  font-size: 24px;
+  /* 增大字体 */
   /*font-weight: bold;  /* 加粗 */
-  color: white;  /* 白色文字 */
-  line-height: 50px; /* 垂直居中 */
+  color: white;
+  /* 白色文字 */
+  line-height: 50px;
+  /* 垂直居中 */
 }
 
 .conversation-item {
@@ -414,46 +382,51 @@ body {
 }
 
 .conversation-item.active,
-.new-chat-btn
- {
+.new-chat-btn {
   background: #fff;
   box-shadow: none;
 }
 
-.answer-content{
-  background-color: rgb(221, 205, 205);
-}
 
 /**用户提问框 */
-.user-question{
-   /**采用相对定位，固定在右侧 */
-   position: relative;
+.user-question {
+  /**采用相对定位，固定在右侧 */
+  position: relative;
   left: 50%;
   /*width: 600px;*/
-  min-width: none;
+  /*min-width: none;*/
   max-width: 600px;
   background-color: rgb(245, 245, 245);
-  border-radius: 18px 18px 0 18px; /* 改用px单位更精确控制 */
-  padding: 15px 20px; /* 增加左右内边距 */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08); /* 添加轻微阴影增强立体感 */
-  margin-bottom: 16px; /* 增加底部间距 */
-  transition: all 0.3s ease; /* 添加过渡动画 */
+  border-radius: 18px 18px 0 18px;
+  /* 改用px单位更精确控制 */
+  padding: 15px 20px;
+  /* 增加左右内边距 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* 添加轻微阴影增强立体感 */
+  margin-bottom: 16px;
+  /* 增加底部间距 */
+  transition: all 0.3s ease;
+  /* 添加过渡动画 */
 }
 
 /**大模型回答框 */
-.ai-answer{
+.ai-answer {
   /**采用相对定位，固定在左侧 */
   position: relative;
   /*right: 2%;*/
   width: 1200px;
   background-color: rgb(245, 245, 245);
-  border-radius: 18px 18px 18px 0; /* 左上、右上、右下圆角 */
-  padding: 15px 20px; /* 内边距 */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* 轻微阴影 */
-  margin-bottom: 16px; /* 底部间距 */
-  transition: all 0.3s ease; /* 过渡动画 */
+  border-radius: 18px 18px 18px 0;
+  /* 左上、右上、右下圆角 */
+  padding: 15px 20px;
+  /* 内边距 */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* 轻微阴影 */
+  margin-bottom: 16px;
+  /* 底部间距 */
+  transition: all 0.3s ease;
+  /* 过渡动画 */
 }
-
-
-
 </style>
+
+
