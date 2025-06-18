@@ -8,18 +8,28 @@
           <span>+</span> 新建对话
         </button>
       </div>
-      
+
       <div class="conversation-list">
         <div v-for="(conversation, index) in conversations" :key="conversation.id"
           :class="['conversation-item', { active: currentConversationId === conversation.id }]"
           @click="switchConversation(conversation.id)">
           <div class="conversation-info">
-            <div class="conversation-title">{{ conversation.title || '新对话' }}</div>
+            <div class="conversation-title">
+              {{ conversation.title || '新对话' }}
+              {{ formatTime(conversation.createdAt) }}
+
+              <button class="delete-btn" @click.stop="deleteConversation(conversation.id)"
+                v-if="conversations.length > 1" style="margin-left: 15px;">
+                🗑️
+              </button>
+
+            </div>
+            <!--
             <div class="conversation-time">{{ formatTime(conversation.createdAt) }}</div>
+          -->
           </div>
-          <button class="delete-btn" @click.stop="deleteConversation(conversation.id)" v-if="conversations.length > 1">
-            🗑️
-          </button>
+
+
         </div>
       </div>
     </div>
@@ -29,11 +39,11 @@
       <div class="chat-content">
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
-            <span></span>
+
             <span class="ai-text">{{ msg.text }}</span>
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
-            <span></span>
+
             <span class="user-text">{{ msg.text }}</span>
           </div>
         </div>
@@ -45,9 +55,11 @@
         </div>
       </div>
       <div class="chat-input-bar">
-        <input v-model="question" placeholder="询问任何问题" @keyup.enter="askModel" />
-        <button class="send-file" @click="sendFile">📂</button>
-        <button class="ask-model" @click="askModel">⬆</button>
+        <textarea v-model="question" placeholder="询问任何问题" @keyup.enter="askModel"></textarea>
+        <div class="send-button">
+          <button class="send-file" @click="sendFile">＋</button>
+          <button class="ask-model" @click="askModel">⬆</button>
+        </div>
       </div>
     </div>
   </div>
@@ -225,10 +237,12 @@ export default {
 
 <style scoped>
 @keyframes dot-animation {
+
   0%,
   100% {
     opacity: 0.3
   }
+
   50% {
     opacity: 1
   }
@@ -254,7 +268,7 @@ body {
   top: 0;
   bottom: 0;
   width: 260px;
-  background: #f7f7f8;
+  background: #d6d6d6;
   border-right: 1px solid #e6e6e6;
   display: flex;
   flex-direction: column;
@@ -262,24 +276,25 @@ body {
 
 .sidebar-header {
   padding: 16px;
-  background: #f7f7f8;
-  border-bottom: 1px solid #e6e6e6;
+  /*background: #f7f7f8;*/
+  /*border-bottom: 1px solid #e6e6e6;*/
 }
 
 .sidebar-header h2 {
-  margin: 0 0 12px 0;
-  font-size: 16px;
-  color: #333;
+  margin: 0 0 12px 10px;
+  font-size: 26px;
+  font-family: 宋体;
+  color: #000000;
   font-weight: 500;
 }
 
 .new-chat-btn {
   width: 100%;
   padding: 8px 12px;
-  background: #fff;
-  color: #333;
+  background: #ffffff;
+  color: #000000;
   border: 1px solid #e6e6e6;
-  border-radius: 6px;
+  border-radius: 15px;
   font-size: 14px;
   font-weight: normal;
   transition: all 0.2s ease;
@@ -292,141 +307,175 @@ body {
 .new-chat-btn:hover {
   background: #f3f3f3;
   transform: none;
-  box-shadow: none;
+  /**增加深色阴影 */
+  box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.1);
 }
 
 .chat-page {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: #ffffff;
   padding: 0;
-  margin: 0;
+  margin-left: 90px;
 }
 
 .chat-content {
   flex: 1;
   width: 1200px;
-  margin-left: 80px;
+  margin-left: 0px;
   padding-left: 10px;
   background-color: rgb(255, 255, 255);
   margin-bottom: 200px;
 }
 
 .chat-input-bar {
+  height: 200px;
   position: fixed;
-  left: 260px;
-  bottom: 0;
-  right: 0;
-  padding: 12px 20px;
-  background: #fff;
+  width: 800px;
+  left: 60%;
+  transform: translateX(-50%);
+  bottom: 3%;
+  padding: 20px 20px;
+  background: #ffffff;
   border-top: 1px solid #e6e6e6;
+  border-radius: 30px;
+  box-shadow: 5px 5px 5px 5px rgba(0.1, 0.1, 0.1, 0.1);
 }
 
 .chat-input-bar input {
-  width: 800px;
-  padding: 20px 20px;
-  border: 1px solid #e6e6e6;
+  width: 765px;
+  padding: 5px 10px;
+  /* 顶部和底部增加5px内边距，左右增加10px内边距 */
+  height: 40px;
+  /* 设置内容区域高度为40px，加上5px上下内边距，总高度为50px */
+  line-height: 1.2;
+  /* 设置行高为正常值，使其与字体大小匹配，避免垂直居中 */
+  vertical-align: top;
+  /* 明确将内容垂直向上对齐 */
+  border: 0px solid #e6e6e6;
   border-radius: 6px;
-  background: #fff;
-  margin-left: 200px;
+  background: #ffffff;
+  margin-left: 0px;
+  margin-top: 0;
+  transition: box-shadow 0.3s ease;
+  /* 添加过渡效果 */
 }
 
-/**提问按钮 */
-.chat-input-bar button.ask-model {
-  padding: 0 15px;
-  height: 50px;
-  margin-left: 10px;
-  border-radius: 20px;
-  background: #4f8cff;
-  font-size: 24px;
-  /* 增大字体 */
-  /*font-weight: bold;  /* 加粗 */
-  color: white;
-  /* 白色文字 */
-  line-height: 50px;
-  /* 垂直居中 */
-}
-
-/**上传文件按钮 */
-.chat-input-bar button.send-file {
-  padding: 0 10px;
-  height: 50px;
-  margin-left: 10px;
-  border-radius: 20px;
-  background: #4f8cff;
-  font-size: 24px;
-  /* 增大字体 */
-  /*font-weight: bold;  /* 加粗 */
-  color: white;
-  /* 白色文字 */
-  line-height: 50px;
-  /* 垂直居中 */
+.chat-input-bar input:focus {
+  box-shadow: 0 0 0px rgba(79, 140, 255, 0.5);
+  /* 点击时的蓝色阴影效果 */
+  outline: none;
+  /* 移除默认的outline样式 */
 }
 
 .conversation-item {
+  margin-left: 15px;
+  margin-right: 15px;
   padding: 8px 12px;
   margin-bottom: 4px;
-  border-radius: 6px;
+  border-radius: 12px;
+  color: #000000;
+  font-size: 16px;
 }
 
+/**键入对话颜色 */
 .conversation-item:hover {
-  background: #ececf1;
+  background: #ffffff;
   transform: none;
 }
 
 .conversation-item.active {
-  background: #ececf1;
+  /*background: #1b1b82;*/
   border-color: transparent;
   box-shadow: none;
 }
 
 .conversation-item.active,
 .new-chat-btn {
-  background: #fff;
+  /*background: #b51313;*/
   box-shadow: none;
 }
 
 
 /**用户提问框 */
 .user-question {
-  /**采用相对定位，固定在右侧 */
-  position: relative;
-  left: 50%;
-  /*width: 600px;*/
-  /*min-width: none;*/
-  max-width: 600px;
-  background-color: rgb(245, 245, 245);
-  border-radius: 18px 18px 0 18px;
-  /* 改用px单位更精确控制 */
-  padding: 15px 20px;
-  /* 增加左右内边距 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  /* 添加轻微阴影增强立体感 */
+  /**采用flex布局实现右对齐 */
+  display: flex;
+  justify-content: flex-end;
+  max-width: 100%;
   margin-bottom: 16px;
-  /* 增加底部间距 */
+  margin-right: 10px;
+}
+
+.user-question>span {
+  background-color: rgb(226, 226, 226);
+  border-radius: 30px 30px 0 30px;
+  padding: 15px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-width: 80%;
+  min-width: 120px;
+  word-break: break-word;
   transition: all 0.3s ease;
-  /* 添加过渡动画 */
+  color: #000000;
 }
 
 /**大模型回答框 */
 .ai-answer {
-  /**采用相对定位，固定在左侧 */
-  position: relative;
-  /*right: 2%;*/
-  width: 1200px;
-  background-color: rgb(245, 245, 245);
-  border-radius: 18px 18px 18px 0;
-  /* 左上、右上、右下圆角 */
-  padding: 15px 20px;
-  /* 内边距 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  /* 轻微阴影 */
+  /**采用flex布局实现左对齐 */
+  display: flex;
+  justify-content: flex-start;
+  max-width: 100%;
   margin-bottom: 16px;
-  /* 底部间距 */
-  transition: all 0.3s ease;
-  /* 过渡动画 */
+  margin-left: 0px;
+  color: #000000;
 }
+
+.ai-answer>span {
+  margin-top: 10px;
+  background-color: rgb(226, 226, 226);
+  border-radius: 25px 25px 25px 0;
+  padding: 15px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  max-width: 80%;
+  min-width: 120px;
+  word-break: break-word;
+  transition: all 0.3s ease;
+}
+
+.send-button {
+  margin-top: 5px;
+  margin-left: 600px;
+}
+
+.send-file,.ask-model {
+  margin-left: 10px;
+  height: 50px;
+  font-size: 25px;
+  width: 50px;
+  background-color: #e2dfdf;
+  border-radius: 15px;
+  border: white;
+}
+
+/**提问框 */
+.chat-input-bar textarea {
+  width: 765px;
+  padding: 10px;
+  height: 80px; /* 固定高度 */
+  line-height: 1.5;
+  border: 0px solid #e6e6e6;
+  border-radius: 6px;
+  background: #ffffff;
+  margin-left: 0;
+  margin-top: 0;
+  resize: none; /* 禁止手动调整大小 */
+  transition: box-shadow 0.3s ease;
+}
+.chat-input-bar textarea:focus {
+  outline: none;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 1);
+}
+
+
 </style>
-
-
