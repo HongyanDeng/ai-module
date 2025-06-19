@@ -40,10 +40,12 @@
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
 
+            <div class="ai-markdown" v-html="markedToHtml(msg.text)"></div>
+            <!--
             <span class="ai-text">{{ msg.text }}</span>
+          -->
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
-
             <span class="user-text">{{ msg.text }}</span>
           </div>
         </div>
@@ -67,6 +69,7 @@
 
 <script>
 import axios from 'axios';
+import { marked } from 'marked'; // 引入 marked
 
 export default {
   name: 'AskModel',
@@ -83,64 +86,9 @@ export default {
     };
   },
   methods: {
-    // async askModel() {
-    //   if (!this.question) return;
-    //
-    //   const userMsg = { role: 'user', text: this.question };
-    //   this.currentMessages.push(userMsg);
-    //   this.loading = true;
-    //   const q = this.question;
-    //   this.question = '';
-    //
-    //   try {
-    //     const response = await axios.post('http://localhost:8080/api/llm/ask', {
-    //       message: q,
-    //       sessionId: this.sessionId || '',
-    //       //sessionId: this.sessionId,
-    //       userId: 'user-' + Date.now()
-    //       //userId:this.userId,
-    //     });
-    //
-    //     let aiResponse = '';
-    //     if (response.data && response.data.answer) {
-    //       aiResponse = response.data.answer;
-    //       // 处理换行符
-    //       aiResponse = aiResponse.replace(/\\n/g, '\n');
-    //       // 移除末尾的 "//"
-    //       if (aiResponse.endsWith("//")) {
-    //         aiResponse = aiResponse.substring(0, aiResponse.length() - 2);
-    //       }
-    //     } else if (response.data && response.data.error) {
-    //       aiResponse = '错误: ' + response.data.error;
-    //     } else {
-    //       aiResponse = '抱歉，我无法理解这个回答。';
-    //     }
-    //
-    //     this.currentMessages.push({ role: 'ai', text: aiResponse });
-    //
-    //     // 更新当前对话的标题（使用第一条用户消息）
-    //     this.updateConversationTitle(q);
-    //     await this.$nextTick();
-    //     this.scrollToBottom();
-    //   } catch (error) {
-    //     console.error('Error:', error);
-    //     let errorMessage = '请求失败';
-    //     if (error.response) {
-    //       if (error.response.data && error.response.data.error) {
-    //         errorMessage = error.response.data.error;
-    //       } else if (error.response.data && error.response.data.message) {
-    //         errorMessage = error.response.data.message;
-    //       } else {
-    //         errorMessage = error.response.data || error.response.statusText;
-    //       }
-    //     } else if (error.message) {
-    //       errorMessage = error.message;
-    //     }
-    //     this.currentMessages.push({ role: 'ai', text: errorMessage });
-    //   } finally {
-    //     this.loading = false;
-    //   }
-    // },
+    markedToHtml(text) {
+      return marked.parse(text || '');
+    },
     extractJsonObjects(text) {
       const result = [];
       let stack = [];
@@ -181,8 +129,7 @@ export default {
       const userMsg = { role: 'user', text: this.question };
       this.currentMessages.push(userMsg);
       this.loading = true;
-      const q = this.question.trim();// 去掉首尾空格
-
+      const q = this.question.trim();// 去掉首尾空格 
 
       this.question = '';
 
@@ -217,7 +164,7 @@ export default {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // ✅ 正确调用组件方法
+          // 正确调用组件方法
           const jsons = this.extractJsonObjects(buffer);
           buffer = buffer.slice(buffer.lastIndexOf(jsons[jsons.length - 1] || '') + jsons.join('').length);
 
@@ -243,17 +190,11 @@ export default {
               console.error('JSON parse error:', e);
             }
           }
-
         }
-
-
         // 最后检查剩余 buffer 是否还有内容
         if (buffer.trim()) {
           console.warn('Unprocessed buffer:', buffer);
         }
-
-
-
 
         // 更新当前对话标题
         this.updateConversationTitle(q);
@@ -290,6 +231,8 @@ export default {
     },
 
     switchConversation(conversationId) {
+      this.isSwitchingConversation = true;
+
       this.currentConversationId = conversationId;
       const conversation = this.conversations.find(c => c.id === conversationId);
       if (conversation) {
@@ -357,7 +300,7 @@ export default {
       handler(newMessages) {
         // 同步当前消息到对话记录
         const conversation = this.conversations.find(c => c.id === this.currentConversationId);
-        if (conversation) {
+        if (conversation && !this.isSwitchingConversation) {
           conversation.messages = [...newMessages];
         }
       },
@@ -611,5 +554,38 @@ body {
 .chat-input-bar textarea:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
+}
+</style>
+
+<style scoped>
+.ai-markdown {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+}
+
+.ai-markdown h1,
+.ai-markdown h2,
+.ai-markdown h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.ai-markdown ul,
+.ai-markdown ol {
+  padding-left: 1.2em;
+}
+
+.ai-markdown code {
+  background-color: #f3f3f3;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.ai-markdown pre code {
+  display: block;
+  background-color: #efefef;
+  padding: 10px;
+  overflow-x: auto;
 }
 </style>
