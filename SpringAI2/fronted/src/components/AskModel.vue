@@ -58,7 +58,7 @@
         <textarea v-model="question" placeholder="询问任何问题" @keyup.enter="askModel"></textarea>
         <div class="send-button">
           <button class="send-file" @click="sendFile">＋</button>
-          <button class="ask-model" @click="askModel">⬆</button>
+          <button class="ask-model" @click="askModel">↑</button>
         </div>
       </div>
     </div>
@@ -187,7 +187,7 @@ export default {
       const conversation = this.conversations.find(c => c.id === this.currentConversationId);
       if (conversation && !conversation.title || conversation.title === '新对话') {
         // 使用第一条用户消息的前20个字符作为标题
-        conversation.title = firstMessage.length > 20 ? firstMessage.substring(0, 20) + '...' : firstMessage;
+        conversation.title = firstMessage.length > 20 ? firstMessage.substring(0, 10) + '...' : firstMessage;
       }
     },
 
@@ -322,17 +322,17 @@ body {
 
 .chat-content {
   flex: 1;
-  width: 1200px;
-  margin-left: 0px;
+  width: 1000px;
+  margin-left: 140px;
   padding-left: 10px;
   background-color: rgb(255, 255, 255);
   margin-bottom: 200px;
 }
 
 .chat-input-bar {
-  height: 200px;
+  height: 160px;
   position: fixed;
-  width: 800px;
+  width: 1000px;
   left: 60%;
   transform: translateX(-50%);
   bottom: 3%;
@@ -445,33 +445,48 @@ body {
 
 .send-button {
   margin-top: 5px;
-  margin-left: 600px;
+  margin-left: 800px;
 }
 
-.send-file,.ask-model {
+.send-file {
   margin-left: 10px;
   height: 50px;
   font-size: 25px;
   width: 50px;
-  background-color: #e2dfdf;
+  background-color: #000000;
   border-radius: 15px;
   border: white;
+  color: #ffffff;
+}
+
+
+.ask-model {
+  margin-left: 10px;
+  height: 50px;
+  font-size: 25px;
+  width: 50px;
+  background-color: #000000;
+  border-radius: 15px;
+  border: white;
+  color: #ffffff;
 }
 
 /**提问框 */
 .chat-input-bar textarea {
-  width: 765px;
+  width: 960px;
   padding: 10px;
-  height: 80px; /* 固定高度 */
+  height: 60px; /* 固定高度 */
   line-height: 1.5;
   border: 0px solid #e6e6e6;
   border-radius: 6px;
-  background: #ffffff;
+  background: #9c2323;
   margin-left: 0;
   margin-top: 0;
   resize: none; /* 禁止手动调整大小 */
   transition: box-shadow 0.3s ease;
+  font-size: 16px;
 }
+
 .chat-input-bar textarea:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
