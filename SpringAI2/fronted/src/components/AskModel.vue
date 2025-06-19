@@ -39,8 +39,11 @@
       <div class="chat-content">
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
+            <div class="ai-text" v-html="renderMarkdown(msg.text).__html"></div>
 
+          <!--
             <span class="ai-text">{{ msg.text }}</span>
+            -->
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
 
@@ -67,6 +70,10 @@
 
 <script>
 import axios from 'axios';
+import * as marked from 'marked';
+
+import DOMPurify from 'dompurify';
+
 
 export default {
   name: 'AskModel',
@@ -83,6 +90,9 @@ export default {
     };
   },
   methods: {
+    renderMarkdown(text) {
+      return { __html: DOMPurify.sanitize(marked.parse(text)) };
+    },
     // async askModel() {
     //   if (!this.question) return;
     //
@@ -593,4 +603,25 @@ body {
   outline: none;
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
 }
+
+.ai-text h1, .ai-text h2, .ai-text h3 {
+  color: #333;
+}
+
+.ai-text ul, .ai-text ol {
+  margin-left: 20px;
+}
+
+.ai-text code {
+  background-color: #f4f4f4;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ai-text pre {
+  background-color: #f8f8f8;
+  padding: 10px;
+  overflow-x: auto;
+}
+
 </style>
