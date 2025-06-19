@@ -263,7 +263,7 @@ export default {
     },
 
     scrollToBottom() {
-      const container = this.$refs.messagesContainer || document.querySelector('.chat-content');
+      const container = this.$refs.messagesContainer || document.querySelector('.ai-markdown');
       if (container) {
         container.scrollTop = container.scrollHeight;
       }
@@ -604,6 +604,7 @@ body {
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
 }
 
+/*
 .ai-text h1, .ai-text h2, .ai-text h3 {
   color: #333;
 }
@@ -623,5 +624,129 @@ body {
   padding: 10px;
   overflow-x: auto;
 }
+*/
+
+.ai-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  word-wrap: break-word;
+  white-space: pre-wrap; /* 保留换行符 */
+  hyphens: auto;
+}
+
+.ai-text h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 4px;
+}
+
+.ai-text h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 4px;
+}
+
+.ai-text h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+}
+
+.ai-text p {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+
+.ai-text a {
+  color: #0366d6;
+  text-decoration: none;
+}
+
+.ai-text a:hover {
+  text-decoration: underline;
+}
+
+.ai-text ul, .ai-text ol {
+  margin-left: 20px;
+  padding-left: 10px;
+}
+
+.ai-text li {
+  margin-bottom: 0.4em;
+}
+
+.ai-text blockquote {
+  border-left: 4px solid #dfe2e5;
+  padding-left: 1em;
+  color: #6a737d;
+  margin-left: 0;
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  background-color: #f6f8fa;
+  border-radius: 4px;
+}
+
+.ai-text code {
+  background-color: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.ai-text pre {
+  background-color: #f0f0f0;
+  padding: 12px 16px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  box-shadow: inset 0 1px 2px rgba(27,31,35,0.05);
+}
+
+.ai-text table {
+  display: block;
+  width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.ai-text th, .ai-text td {
+  padding: 6px 13px;
+  border: 1px solid #dfe2e5;
+}
+
+.ai-text th {
+  font-weight: bold;
+  background-color: #f6f8fa;
+}
+
+.ai-text img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.ai-text hr {
+  height: 1px;
+  background-color: #eaeaea;
+  border: none;
+  margin: 2em 0;
+}
+
 
 </style>
