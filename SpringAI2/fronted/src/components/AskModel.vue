@@ -58,7 +58,7 @@
         <textarea v-model="question" placeholder="询问任何问题" @keyup.enter="askModel"></textarea>
         <div class="send-button">
           <button class="send-file" @click="sendFile">＋</button>
-          <button class="ask-model" @click="askModel">⬆</button>
+          <button class="ask-model" @click="askModel">↑</button>
         </div>
       </div>
     </div>
@@ -141,13 +141,49 @@ export default {
     //     this.loading = false;
     //   }
     // },
+    extractJsonObjects(text) {
+      const result = [];
+      let stack = [];
+      let start = -1;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '{' && (i === 0 || text[i - 1] !== '\\')) {
+          if (stack.length === 0) {
+            start = i;
+          }
+          stack.push(char);
+        } else if (char === '}' && (i === 0 || text[i - 1] !== '\\')) {
+          if (stack.length > 0) {
+            stack.pop();
+            if (stack.length === 0 && start !== -1) {
+              try {
+                const jsonStr = text.slice(start, i + 1);
+                JSON.parse(jsonStr); // 验证是否合法
+                result.push(jsonStr);
+                start = -1;
+              } catch (e) {
+                // 忽略非法内容
+                start = -1;
+              }
+            }
+          }
+        }
+      }
+
+      return result;
+    },
+
     async askModel() {
       if (!this.question) return;
 
       const userMsg = { role: 'user', text: this.question };
       this.currentMessages.push(userMsg);
       this.loading = true;
-      const q = this.question;
+      const q = this.question.trim();// 去掉首尾空格
+
+
       this.question = '';
 
       try {
@@ -170,31 +206,53 @@ export default {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let aiResponse = '';
-
-        // 创建一个空的 AI 消息占位符
         const aiMessageIndex = this.currentMessages.length;
         this.currentMessages.push({ role: 'ai', text: '' });
+
+        let buffer = '';
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          console.log('Received chunk:', chunk);
+          buffer += decoder.decode(value, { stream: true });
 
-          try {
-            const parsed = JSON.parse(chunk);
-            if (parsed.event === 'message') {
-              aiResponse += parsed.answer;
-              this.currentMessages[aiMessageIndex].text = aiResponse;
+          // ✅ 正确调用组件方法
+          const jsons = this.extractJsonObjects(buffer);
+          buffer = buffer.slice(buffer.lastIndexOf(jsons[jsons.length - 1] || '') + jsons.join('').length);
+
+          for (const jsonStr of jsons) {
+            try {
+              const parsed = JSON.parse(jsonStr);
+
+              let newText = '';
+              if (parsed.event === 'message') {
+                newText = parsed.answer;
+              } else if (parsed.event === 'node_finished' && parsed.data?.outputs?.text) {
+                newText = parsed.data.outputs.text;
+              }
+
+              if (newText) {
+                aiResponse += newText;
+                this.currentMessages[aiMessageIndex].text = aiResponse;
+                await this.$nextTick();
+                this.scrollToBottom();
+              }
+
+            } catch (e) {
+              console.error('JSON parse error:', e);
             }
-          } catch (e) {
-            console.error('JSON parse error:', e);
           }
 
-          await this.$nextTick();
-          this.scrollToBottom();
         }
+
+
+        // 最后检查剩余 buffer 是否还有内容
+        if (buffer.trim()) {
+          console.warn('Unprocessed buffer:', buffer);
+        }
+
+
 
 
         // 更新当前对话标题
@@ -261,7 +319,7 @@ export default {
       const conversation = this.conversations.find(c => c.id === this.currentConversationId);
       if (conversation && !conversation.title || conversation.title === '新对话') {
         // 使用第一条用户消息的前20个字符作为标题
-        conversation.title = firstMessage.length > 20 ? firstMessage.substring(0, 20) + '...' : firstMessage;
+        conversation.title = firstMessage.length > 20 ? firstMessage.substring(0, 10) + '...' : firstMessage;
       }
     },
 
@@ -519,7 +577,7 @@ body {
 
 .send-button {
   margin-top: 5px;
-  margin-left: 600px;
+  margin-left: 800px;
 }
 
 .send-file,

@@ -58,6 +58,7 @@ public class ConversationHistory {
     @Column(name = "create_time", nullable = false, updatable = false)
     private LocalDateTime createTime;
 
+    /*
     @PrePersist
     public void prePersist() {
         if (this.id == null || this.id.isEmpty()) {
@@ -66,5 +67,5 @@ public class ConversationHistory {
         if (this.createTime == null) {
             this.createTime = LocalDateTime.now();
         }
-    }
+    }*/
 }
