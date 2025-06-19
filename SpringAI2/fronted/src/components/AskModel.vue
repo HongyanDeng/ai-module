@@ -175,26 +175,65 @@ export default {
         const aiMessageIndex = this.currentMessages.length;
         this.currentMessages.push({ role: 'ai', text: '' });
 
+        let buffer = '';
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          console.log('Received chunk:', chunk);
+          buffer += chunk;
 
-          try {
-            const parsed = JSON.parse(chunk);
+          // 提取所有可能的 JSON 对象
+          const jsons = [];
+          let startIdx = buffer.indexOf('{');
+          let endIdx = -1;
+          let depth = 0;
+
+          while (startIdx !== -1) {
+            for (let i = startIdx; i < buffer.length; i++) {
+              if (buffer[i] === '{') depth++;
+              else if (buffer[i] === '}') depth--;
+
+              if (depth === 0) {
+                endIdx = i;
+                break;
+              }
+            }
+
+            if (depth === 0 && endIdx > startIdx) {
+              const potentialJson = buffer.slice(startIdx, endIdx + 1);
+              try {
+                const parsed = JSON.parse(potentialJson);
+                jsons.push(parsed);
+                // 移除已解析部分
+                buffer = buffer.slice(endIdx + 1);
+                startIdx = buffer.indexOf('{');
+                depth = 0;
+              } catch (e) {
+                console.warn('Invalid JSON found:', potentialJson);
+                buffer = buffer.slice(startIdx + 1); // 跳过无法解析的部分
+                startIdx = buffer.indexOf('{');
+                break;
+              }
+            } else {
+              // 不完整 JSON，跳出循环继续接收数据
+              break;
+            }
+          }
+
+          // 处理提取出的 JSON 数据
+          for (const parsed of jsons) {
             if (parsed.event === 'message') {
               aiResponse += parsed.answer;
               this.currentMessages[aiMessageIndex].text = aiResponse;
             }
-          } catch (e) {
-            console.error('JSON parse error:', e);
           }
 
           await this.$nextTick();
           this.scrollToBottom();
         }
+
+
 
 
         // 更新当前对话标题
