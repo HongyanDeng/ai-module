@@ -157,7 +157,7 @@ export default {
       const userMsg = { role: 'user', text: this.question };
       this.currentMessages.push(userMsg);
       this.loading = true;
-      const q = this.question;
+      const q = this.question.trim();
       this.question = '';
 
       try {
