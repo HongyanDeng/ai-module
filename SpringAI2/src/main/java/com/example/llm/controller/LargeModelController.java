@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import reactor.core.publisher.Flux;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -22,6 +26,7 @@ public class LargeModelController {
     private final LargeModelService largeModelService;
     private final ConversationService conversationService;
 
+    /*
     @PostMapping("/ask")
     public ResponseEntity<?> askLargeModel(@RequestBody Map<String, Object> request) {
         try {
@@ -103,4 +108,22 @@ public class LargeModelController {
             return ResponseEntity.internalServerError().body(errorMap);
         }
     }
+*/
+    /**
+     * 获取流式 Large Model 响应
+     */
+
+    @PostMapping(value = "/ask-stream", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
+    public ResponseEntity<Flux<String>> askLargeModelStream(@RequestBody Map<String, Object> request) {
+        String message = (String) request.get("message");
+        String sessionId = (String) request.get("sessionId");
+        String userId = (String) request.get("userId");
+
+        List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(sessionId);
+
+        Flux<String> stream = largeModelService.streamLargeModelResponse(message, history, "", userId);
+
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_STREAM_JSON).body(stream);
+    }
+
 }

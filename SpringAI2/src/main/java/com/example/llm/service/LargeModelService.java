@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+
 @Slf4j
 @Service
 public class LargeModelService {
@@ -127,5 +130,53 @@ public class LargeModelService {
             errorMap.put("error", "调用AI服务时发生错误: " + e.getMessage());
             return errorMap;
         }
+    }
+
+
+    /**
+     * 流式模式
+     */
+    private final WebClient webClient;
+
+    public LargeModelService(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.baseUrl(API_URL).build();
+    }
+
+    public Flux<String> streamLargeModelResponse(String query, List<ConversationHistory> history, String conversationId, String userId) {
+        Map<String, Object> requestBody = buildRequestBody(query, history, conversationId, userId);
+
+        return webClient.post()
+                .header(HttpHeaders.CONTENT_TYPE, "application/json")
+                .header(HttpHeaders.AUTHORIZATION, API_KEY)
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToFlux(String.class); // 按照实际返回类型调整
+    }
+
+    private Map<String, Object> buildRequestBody(String query, List<ConversationHistory> history, String conversationId, String userId) {
+        Map<String, Object> apiRequestBody = new HashMap<>();
+        List<Map<String, Object>> messages = new ArrayList<>();
+
+        history.forEach(h -> {
+            Map<String, Object> msg = new HashMap<>();
+            msg.put("role", h.getRole());
+            msg.put("content", h.getContent());
+            messages.add(msg);
+        });
+
+        if (messages.isEmpty()) {
+            apiRequestBody.put("inputs", new HashMap<>());
+        } else {
+            Map<String, Object> inputs = new HashMap<>();
+            inputs.put("messages", messages);
+            apiRequestBody.put("inputs", inputs);
+        }
+
+        apiRequestBody.put("query", query);
+        apiRequestBody.put("response_mode", "streaming"); // 启用流式响应
+        apiRequestBody.put("conversation_id", conversationId);
+        apiRequestBody.put("user", userId);
+
+        return apiRequestBody;
     }
 }

@@ -83,62 +83,136 @@ export default {
     };
   },
   methods: {
+    // async askModel() {
+    //   if (!this.question) return;
+    //
+    //   const userMsg = { role: 'user', text: this.question };
+    //   this.currentMessages.push(userMsg);
+    //   this.loading = true;
+    //   const q = this.question;
+    //   this.question = '';
+    //
+    //   try {
+    //     const response = await axios.post('http://localhost:8080/api/llm/ask', {
+    //       message: q,
+    //       sessionId: this.sessionId || '',
+    //       //sessionId: this.sessionId,
+    //       userId: 'user-' + Date.now()
+    //       //userId:this.userId,
+    //     });
+    //
+    //     let aiResponse = '';
+    //     if (response.data && response.data.answer) {
+    //       aiResponse = response.data.answer;
+    //       // 处理换行符
+    //       aiResponse = aiResponse.replace(/\\n/g, '\n');
+    //       // 移除末尾的 "//"
+    //       if (aiResponse.endsWith("//")) {
+    //         aiResponse = aiResponse.substring(0, aiResponse.length() - 2);
+    //       }
+    //     } else if (response.data && response.data.error) {
+    //       aiResponse = '错误: ' + response.data.error;
+    //     } else {
+    //       aiResponse = '抱歉，我无法理解这个回答。';
+    //     }
+    //
+    //     this.currentMessages.push({ role: 'ai', text: aiResponse });
+    //
+    //     // 更新当前对话的标题（使用第一条用户消息）
+    //     this.updateConversationTitle(q);
+    //     await this.$nextTick();
+    //     this.scrollToBottom();
+    //   } catch (error) {
+    //     console.error('Error:', error);
+    //     let errorMessage = '请求失败';
+    //     if (error.response) {
+    //       if (error.response.data && error.response.data.error) {
+    //         errorMessage = error.response.data.error;
+    //       } else if (error.response.data && error.response.data.message) {
+    //         errorMessage = error.response.data.message;
+    //       } else {
+    //         errorMessage = error.response.data || error.response.statusText;
+    //       }
+    //     } else if (error.message) {
+    //       errorMessage = error.message;
+    //     }
+    //     this.currentMessages.push({ role: 'ai', text: errorMessage });
+    //   } finally {
+    //     this.loading = false;
+    //   }
+    // },
     async askModel() {
       if (!this.question) return;
+
       const userMsg = { role: 'user', text: this.question };
       this.currentMessages.push(userMsg);
       this.loading = true;
       const q = this.question;
       this.question = '';
+
       try {
-        const response = await axios.post('http://localhost:8080/api/llm/ask', {
-          message: q,
-          sessionId: this.sessionId || '',
-          //sessionId: this.sessionId,
-          userId: 'user-' + Date.now()
-          //userId:this.userId,
+        const response = await fetch('http://localhost:8080/api/llm/ask-stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            message: q,
+            sessionId: this.sessionId || '',
+            userId: 'user-' + Date.now()
+          })
         });
 
-        let aiResponse = '';
-        if (response.data && response.data.answer) {
-          aiResponse = response.data.answer;
-          // 处理换行符
-          aiResponse = aiResponse.replace(/\\n/g, '\n');
-          // 移除末尾的 "//"
-          if (aiResponse.endsWith("//")) {
-            aiResponse = aiResponse.substring(0, aiResponse.length() - 2);
-          }
-        } else if (response.data && response.data.error) {
-          aiResponse = '错误: ' + response.data.error;
-        } else {
-          aiResponse = '抱歉，我无法理解这个回答。';
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
         }
 
-        this.currentMessages.push({ role: 'ai', text: aiResponse });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let aiResponse = '';
 
-        // 更新当前对话的标题（使用第一条用户消息）
+        // 创建一个空的 AI 消息占位符
+        const aiMessageIndex = this.currentMessages.length;
+        this.currentMessages.push({ role: 'ai', text: '' });
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          console.log('Received chunk:', chunk);
+
+          try {
+            const parsed = JSON.parse(chunk);
+            if (parsed.event === 'message') {
+              aiResponse += parsed.answer;
+              this.currentMessages[aiMessageIndex].text = aiResponse;
+            }
+          } catch (e) {
+            console.error('JSON parse error:', e);
+          }
+
+          await this.$nextTick();
+          this.scrollToBottom();
+        }
+
+
+        // 更新当前对话标题
         this.updateConversationTitle(q);
-        await this.$nextTick();
-        this.scrollToBottom();
+
+        // 如果有错误信息，显示出来
+        if (aiResponse.trim() === '') {
+          this.currentMessages[aiMessageIndex].text = 'AI 返回了空结果，请稍后再试。';
+        }
+
       } catch (error) {
         console.error('Error:', error);
-        let errorMessage = '请求失败';
-        if (error.response) {
-          if (error.response.data && error.response.data.error) {
-            errorMessage = error.response.data.error;
-          } else if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else {
-            errorMessage = error.response.data || error.response.statusText;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-        this.currentMessages.push({ role: 'ai', text: errorMessage });
+        this.currentMessages.push({ role: 'ai', text: '请求失败: ' + error.message });
       } finally {
         this.loading = false;
       }
     },
+
     scrollToBottom() {
       const container = this.$refs.messagesContainer || document.querySelector('.chat-content');
       if (container) {
@@ -448,7 +522,8 @@ body {
   margin-left: 600px;
 }
 
-.send-file,.ask-model {
+.send-file,
+.ask-model {
   margin-left: 10px;
   height: 50px;
   font-size: 25px;
@@ -462,20 +537,21 @@ body {
 .chat-input-bar textarea {
   width: 765px;
   padding: 10px;
-  height: 80px; /* 固定高度 */
+  height: 80px;
+  /* 固定高度 */
   line-height: 1.5;
   border: 0px solid #e6e6e6;
   border-radius: 6px;
   background: #ffffff;
   margin-left: 0;
   margin-top: 0;
-  resize: none; /* 禁止手动调整大小 */
+  resize: none;
+  /* 禁止手动调整大小 */
   transition: box-shadow 0.3s ease;
 }
+
 .chat-input-bar textarea:focus {
   outline: none;
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
 }
-
-
 </style>
