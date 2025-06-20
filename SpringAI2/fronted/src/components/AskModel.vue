@@ -9,32 +9,33 @@
         </button>
       </div>
 
-
 <!--        新增几个按钮，分别是AI助手大模型、数据分析大模型、OCR工作流大模型、记忆助手大模型-->
         <div class="model-selector">
-          <button type="primary" plain @click="switchModel('ai')">
+          <button type="primary" plain @click="switchModel('ai')" style="background-color:#e6f7ff ">
             <span class="model-icon"></span>
-            AI助手大模型
+            AI助手
           </button>
-          <button type="primary" plain @click="switchModel('data')">
+          <button type="primary" plain @click="switchModel('data')" style="background-color:#f0fff0 ">
             <span class="model-icon"></span>
-            数据分析大模型
+            数据分析
           </button>
-          <button type="primary" plain @click="switchModel('ocr')">
+          <button type="primary" plain @click="switchModel('ocr')" style="background-color: #fff8e6">
             <span class="model-icon"></span>
-            OCR工作流大模型
+            OCR工作流
           </button>
-          <button type="primary" plain @click="switchModel('memory')">
+          <button type="primary" plain @click="switchModel('memory')" style="background-color: #ffe6f0">
             <span class="model-icon"></span>
-            记忆助手大模型
+            记忆助手
           </button>
         </div>
 
 
       <div class="conversation-list">
-        <div v-for="(conversation, index) in conversations" :key="conversation.id"
-          :class="['conversation-item', { active: currentConversationId === conversation.id }]"
-          @click="switchConversation(conversation.id)">
+        <div  v-for="(conversation, index) in conversations" :key="conversation.id"
+              :class="['conversation-item',{ active: currentConversationId === conversation.id },
+              conversation.modelType ? 'model-type-' + conversation.modelType : '']"
+              :style="{ backgroundColor: modelColorMap[conversation.modelType] }"
+              @click="switchConversation(conversation.id)">
           <div class="conversation-info">
             <div class="conversation-title">
               {{ conversation.title || '新对话' }}
@@ -109,6 +110,12 @@ export default {
       currentConversationId: null,
       userId: null, // 👈 新增字段，用于保存固定 userId
       currentModel: 'memory', // 默认模型（可选值：ai, data, ocr, memory）
+      modelColorMap: {
+        ai: '#e6f7ff',     // 蓝色系
+        data: '#f0fff0',   // 绿色系
+        ocr: '#fff8e6',    // 黄色系
+        memory: '#ffe6f0'  // 粉色系
+      },
 
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
@@ -188,6 +195,9 @@ export default {
     //     this.loading = false;
     //   }
     // },
+
+
+
     async askModel() {
       if (!this.question) return;
 
@@ -319,7 +329,8 @@ export default {
         id: newSessionId,
         title: '新对话',
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
-        createdAt: new Date()
+        createdAt: new Date(),
+        modelType: this.currentModel // 👈 新增字段，记录当前模型类型
       };
 
       this.conversations.push(newConversation);
