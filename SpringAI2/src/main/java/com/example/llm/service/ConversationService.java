@@ -4,7 +4,8 @@ import com.example.llm.entity.ConversationHistory;
 import java.util.List;
 
 public interface ConversationService {
-    void saveConversation(ConversationHistory conversation);
-    List<ConversationHistory> getConversationHistory(String sessionId);
+
+    void saveConversation(ConversationHistory conversationHistory);
+
     List<ConversationHistory> getConversationHistoryBySessionId(String sessionId);
-} 
+}

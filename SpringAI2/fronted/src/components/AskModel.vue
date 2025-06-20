@@ -83,6 +83,7 @@ export default {
       loading: false,
       sessionId: '',
       conversations: [],
+      conversationId: null,  // 👈 新增
       currentConversationId: null,
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
@@ -169,7 +170,8 @@ export default {
           body: JSON.stringify({
             message: q,
             sessionId: this.sessionId || '',
-            userId: 'user-' + Date.now()
+            userId: 'user-' + Date.now(),
+            conversationId: this.conversationId || ''  // 新增字段
           })
         });
 
@@ -236,6 +238,11 @@ export default {
             if (parsed.event === 'message') {
               aiResponse += parsed.answer;
               this.currentMessages[aiMessageIndex].text = aiResponse;
+              // 👇 如果有返回新的 conversation_id，则更新到前端
+              // 👇 只有当 conversation_id 存在且非空时才更新
+              if (parsed.conversation_id && parsed.conversation_id.trim() !== '') {
+                this.conversationId = parsed.conversation_id;
+              }
             }
           }
 
@@ -269,15 +276,18 @@ export default {
       }
     },
     createNewChat() {
+      const newSessionId = 'session-' + Date.now();
+      this.sessionId = newSessionId;
+
       const newConversation = {
-        id: 'conv-' + Date.now(),
+        id: newSessionId,
         title: '新对话',
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
         createdAt: new Date()
       };
 
       this.conversations.push(newConversation);
-      this.switchConversation(newConversation.id);
+      this.switchConversation(newSessionId);
     },
 
     switchConversation(conversationId) {
@@ -286,6 +296,10 @@ export default {
       if (conversation) {
         this.currentMessages = [...conversation.messages];
         this.sessionId = 'session-' + conversationId;
+
+        // 👇 新增：将历史对话中的 ai_conversation_id 同步到当前对话状态中
+        const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
+        this.conversationId = lastAIMessage?.conversationId || null;
       }
     },
 

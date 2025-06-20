@@ -39,7 +39,7 @@ public class ConversationHistory {
     @Column(name = "role")
     private String role;
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
     @Column(name = "ip_address")

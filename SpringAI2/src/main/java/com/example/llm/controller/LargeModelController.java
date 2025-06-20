@@ -7,15 +7,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.http.MediaType;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-import reactor.core.publisher.Flux;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @RestController
@@ -23,96 +24,14 @@ import reactor.core.publisher.Flux;
 @RequestMapping("/api/llm")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class LargeModelController {
+
     private final LargeModelService largeModelService;
     private final ConversationService conversationService;
+    private final ObjectMapper objectMapper; // 注入 ObjectMapper
 
-    /*
-    @PostMapping("/ask")
-    public ResponseEntity<?> askLargeModel(@RequestBody Map<String, Object> request) {
-        try {
-            String message = (String) request.get("message");
-            String frontendSessionId = (String) request.get("sessionId");
-            String userId = (String) request.get("userId");
-
-            if (message == null || message.trim().isEmpty()) {
-                Map<String, Object> errorMap = new HashMap<>();
-                errorMap.put("error", "消息内容不能为空");
-                return ResponseEntity.badRequest().body(errorMap);
-            }
-
-            // 确定用于数据库历史记录的会话ID (来自前端或新的时间戳式ID)
-            String currentSessionId = (frontendSessionId != null && !frontendSessionId.isEmpty()) ?
-                frontendSessionId : "session-" + System.currentTimeMillis();
-
-            // 确定最终的用户ID
-            String finalUserId = (userId != null && !userId.isEmpty()) ?
-                userId : "default-user";
-
-            // 使用 currentSessionId 获取历史记录
-            List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(currentSessionId);
-
-            // 总是发送空字符串作为 conversation_id 给 AI 服务，让AI服务自己管理。
-            // 这样处理是基于 ai.txt 中请求示例的 conversation_id 为空字符串的假设。
-            String conversationIdForAI = "";
-
-            // 保存用户消息
-            ConversationHistory userMessage = new ConversationHistory();
-            userMessage.setConversationId(UUID.randomUUID().toString()); // 为本次交互生成一个新的UUID，作为数据库的 conversationId
-            userMessage.setSessionId(currentSessionId); // 保存前端的会话ID
-            userMessage.setRole("user");
-            userMessage.setContent(message);
-            userMessage.setUserId(finalUserId);
-            conversationService.saveConversation(userMessage);
-
-            // 调用AI服务
-            Map<String, Object> response = largeModelService.askLargeModel(
-                message, history, conversationIdForAI, finalUserId);
-
-            if (response.containsKey("error")) {
-                // 如果AI返回错误，也保存错误信息作为AI的响应，便于调试
-                ConversationHistory errorMessage = new ConversationHistory();
-                errorMessage.setConversationId(UUID.randomUUID().toString());
-                errorMessage.setSessionId(currentSessionId);
-                errorMessage.setRole("assistant_error");
-                errorMessage.setContent((String) response.get("error"));
-                errorMessage.setUserId(finalUserId);
-                conversationService.saveConversation(errorMessage);
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // 保存AI响应
-            if (response.containsKey("answer")) {
-                ConversationHistory aiMessage = new ConversationHistory();
-                aiMessage.setConversationId(UUID.randomUUID().toString()); // 为本次交互生成一个新的UUID
-                aiMessage.setSessionId(currentSessionId); // 保存前端的会话ID
-                aiMessage.setRole("assistant");
-                aiMessage.setContent((String) response.get("answer"));
-                aiMessage.setUserId(finalUserId);
-                // 从AI响应中获取AI的 conversation_id 和 message_id
-                if (response.containsKey("conversation_id")) {
-                    aiMessage.setAiConversationId((String) response.get("conversation_id"));
-                }
-                if (response.containsKey("message_id")) {
-                    aiMessage.setAiMessageId((String) response.get("message_id"));
-                }
-                conversationService.saveConversation(aiMessage);
-            }
-
-            // 返回响应给前端，包含 currentSessionId 以便前端跟踪
-            response.put("sessionId", currentSessionId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Error processing request", e);
-            Map<String, Object> errorMap = new HashMap<>();
-            errorMap.put("error", "处理请求时发生错误: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorMap);
-        }
-    }
-*/
     /**
-     * 获取流式 Large Model 响应
+     * 获取流式 Large Model 响应，并在完成后保存 AI 回答到数据库
      */
-
     @PostMapping(value = "/ask-stream", produces = MediaType.APPLICATION_STREAM_JSON_VALUE)
     public ResponseEntity<Flux<String>> askLargeModelStream(@RequestBody Map<String, Object> request) {
         String message = (String) request.get("message");
@@ -121,9 +40,88 @@ public class LargeModelController {
 
         List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(sessionId);
 
-        Flux<String> stream = largeModelService.streamLargeModelResponse(message, history, "", userId);
+        // 👇 使用 AtomicReference 包装可变变量
+        AtomicReference<String> aiConversationIdRef = new AtomicReference<>("");
 
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_STREAM_JSON).body(stream);
+        if (!history.isEmpty()) {
+            ConversationHistory lastMessage = history.get(history.size() - 1);
+            if (lastMessage != null && lastMessage.getAiConversationId() != null) {
+                aiConversationIdRef.set(lastMessage.getAiConversationId());
+            }
+        }
+
+        // 👇 收集完整的 AI 回答内容
+        AtomicReference<String> fullAnswer = new AtomicReference<>("");
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_STREAM_JSON)
+                .body(Flux.create(sink -> {
+
+                    String conversationIdForNext = aiConversationIdRef.get();
+
+                    // 如果为空，允许服务端生成新的 conversation_id
+                    log.info("使用 conversation_id: {}", conversationIdForNext);
+
+
+                    largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId)
+                            .subscribe(
+                                    chunk -> {
+                                        sink.next(chunk); // 发送给前端
+                                        fullAnswer.updateAndGet(v -> v + chunk); // 累积完整回答
+                                    },
+                                    error -> {
+                                        log.error("Streaming error", error);
+                                        sink.error(error);
+                                    },
+                                    () -> {
+                                        try {
+                                            // 👇 在这里可以安全地使用 fullAnswer 和 aiConversationIdRef
+                                            String answerStr = fullAnswer.get();
+
+                                            // 解析 JSON 获取 conversation_id 和 message_id
+                                            JsonNode jsonNode = objectMapper.readTree(answerStr);
+
+
+                                            String conversationId = jsonNode.has("conversation_id") ?
+                                                    jsonNode.get("conversation_id").asText() : UUID.randomUUID().toString();
+
+                                            ConversationHistory aiMessage = new ConversationHistory();
+                                            aiMessage.setAiConversationId(conversationId); // 确保不为空
+
+                                            String messageId = jsonNode.has("message_id") ?
+                                                    jsonNode.get("message_id").asText() : null;
+
+
+                                            /**
+                                             * 检查是否真的存入数据库
+                                             */
+                                            log.info("准备保存 AI 回答：{}", answerStr);
+                                            log.info("回答长度：{}", answerStr.length());
+                                            log.info("session_id: {}, conversation_id: {}", sessionId, conversationId);
+
+                                            // 构造实体类并保存
+                                            aiMessage = new ConversationHistory();
+                                            aiMessage.setId(UUID.randomUUID().toString());
+                                            aiMessage.setSessionId(sessionId);
+                                            aiMessage.setRole("assistant");
+                                            aiMessage.setContent(answerStr); // 或只保存纯文本部分
+                                            aiMessage.setUserId(userId);
+                                            aiMessage.setAiConversationId(conversationId);
+                                            aiMessage.setAiMessageId(messageId);
+                                            aiMessage.setCreateTime(java.time.LocalDateTime.now());
+
+                                            log.info("开始保存到数据库...");
+                                            conversationService.saveConversation(aiMessage);
+                                            log.info("保存完成！");
+
+                                            sink.complete(); // 完成流
+                                        } catch (Exception e) {
+                                            log.error("Error saving AI response to DB", e);
+                                            sink.complete(); // 即使失败也继续完成
+                                        }
+                                    }
+                            );
+                }));
     }
 
 }

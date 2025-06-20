@@ -143,7 +143,15 @@ public class LargeModelService {
     }
 
     public Flux<String> streamLargeModelResponse(String query, List<ConversationHistory> history, String conversationId, String userId) {
+
+
         Map<String, Object> requestBody = buildRequestBody(query, history, conversationId, userId);
+
+
+
+        log.info("发送流式请求到：{}", requestBody);
+        log.info("流式请求参数 -> message: {}, conversationId: {}, userId: {}",
+                query, conversationId, userId);
 
         return webClient.post()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -153,16 +161,17 @@ public class LargeModelService {
                 .bodyToFlux(String.class); // 按照实际返回类型调整
     }
 
-    private Map<String, Object> buildRequestBody(String query, List<ConversationHistory> history, String conversationId, String userId) {
+    private Map<String, Object> buildRequestBody(String query, List<ConversationHistory> history,
+                                                 String sessionId, String userId) {
         Map<String, Object> apiRequestBody = new HashMap<>();
         List<Map<String, Object>> messages = new ArrayList<>();
 
-        history.forEach(h -> {
+        for (ConversationHistory h : history) {
             Map<String, Object> msg = new HashMap<>();
             msg.put("role", h.getRole());
             msg.put("content", h.getContent());
             messages.add(msg);
-        });
+        }
 
         if (messages.isEmpty()) {
             apiRequestBody.put("inputs", new HashMap<>());
@@ -174,7 +183,7 @@ public class LargeModelService {
 
         apiRequestBody.put("query", query);
         apiRequestBody.put("response_mode", "streaming"); // 启用流式响应
-        apiRequestBody.put("conversation_id", conversationId);
+        apiRequestBody.put("session_id", sessionId);
         apiRequestBody.put("user", userId);
 
         return apiRequestBody;

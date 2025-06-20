@@ -7,6 +7,6 @@ import java.util.List;
 
 @Repository
 public interface ConversationHistoryRepository extends JpaRepository<ConversationHistory, String> {
-    List<ConversationHistory> findByConversationIdOrderByCreateTimeAsc(String conversationId);
+
     List<ConversationHistory> findBySessionIdOrderByCreateTimeAsc(String sessionId);
-} 
+}
