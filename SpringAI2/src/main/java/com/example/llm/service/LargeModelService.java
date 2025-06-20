@@ -142,7 +142,7 @@ public class LargeModelService {
         this.webClient = webClientBuilder.baseUrl(API_URL).build();
     }
 
-    public Flux<String> streamLargeModelResponse(String query, List<ConversationHistory> history, String conversationId, String userId) {
+    public Flux<String> streamLargeModelResponse(String query, List<ConversationHistory> history, String conversationId,String userId) {
 
 
         Map<String, Object> requestBody = buildRequestBody(query, history, conversationId, userId);
@@ -162,7 +162,7 @@ public class LargeModelService {
     }
 
     private Map<String, Object> buildRequestBody(String query, List<ConversationHistory> history,
-                                                 String sessionId, String userId) {
+                                                 String conversationId,String userId) {
         Map<String, Object> apiRequestBody = new HashMap<>();
         List<Map<String, Object>> messages = new ArrayList<>();
 
@@ -183,7 +183,7 @@ public class LargeModelService {
 
         apiRequestBody.put("query", query);
         apiRequestBody.put("response_mode", "streaming"); // 启用流式响应
-        apiRequestBody.put("session_id", sessionId);
+        apiRequestBody.put("conversation_id", conversationId);
         apiRequestBody.put("user", userId);
 
         return apiRequestBody;

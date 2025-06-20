@@ -83,8 +83,9 @@ export default {
       loading: false,
       sessionId: '',
       conversations: [],
-      conversationId: null,  // 👈 新增
+      conversationId: '',  // 👈 新增
       currentConversationId: null,
+      userId: null, // 👈 新增字段，用于保存固定 userId
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
       ]
@@ -170,7 +171,7 @@ export default {
           body: JSON.stringify({
             message: q,
             sessionId: this.sessionId || '',
-            userId: 'user-' + Date.now(),
+            userId: this.userId || '', // 👈 使用固定 userId
             conversationId: this.conversationId || ''  // 新增字段
           })
         });
@@ -250,9 +251,6 @@ export default {
           this.scrollToBottom();
         }
 
-
-
-
         // 更新当前对话标题
         this.updateConversationTitle(q);
 
@@ -279,6 +277,8 @@ export default {
       const newSessionId = 'session-' + Date.now();
       this.sessionId = newSessionId;
 
+      const newUserId = 'user-' + Date.now(); // 生成唯一 userId
+
       const newConversation = {
         id: newSessionId,
         title: '新对话',
@@ -288,18 +288,26 @@ export default {
 
       this.conversations.push(newConversation);
       this.switchConversation(newSessionId);
+      this.userId = newUserId; // 设置固定 userId
     },
 
     switchConversation(conversationId) {
       this.currentConversationId = conversationId;
       const conversation = this.conversations.find(c => c.id === conversationId);
+
       if (conversation) {
         this.currentMessages = [...conversation.messages];
         this.sessionId = 'session-' + conversationId;
 
+        // 如果该对话已存在 userId，则复用；否则生成新的
+        this.userId = conversation.userId || 'user-' + Date.now();
+
+        // 存储到当前对话对象中，避免下次切换回来再变
+        conversation.userId = this.userId;
+
         // 👇 新增：将历史对话中的 ai_conversation_id 同步到当前对话状态中
         const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
-        this.conversationId = lastAIMessage?.conversationId || null;
+        this.conversationId = lastAIMessage?.conversationId || '';
       }
     },
 
@@ -346,16 +354,20 @@ export default {
   },
   created() {
     // 初始化第一个对话
+    const initialSessionId = 'session-' + Date.now();
+    const initialUserId = 'user-' + Date.now();
+
     const initialConversation = {
-      id: 'conv-' + Date.now(),
+      id: initialSessionId,
       title: '新对话',
       messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
-      createdAt: new Date()
+      createdAt: new Date(),
+      userId: initialUserId // 👈 初始化 userId
     };
 
     this.conversations.push(initialConversation);
-    this.currentConversationId = initialConversation.id;
-    this.sessionId = 'session-' + this.currentConversationId;
+    this.switchConversation(initialSessionId);
+    this.userId = initialUserId;
   },
   watch: {
     currentMessages: {

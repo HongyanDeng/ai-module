@@ -57,10 +57,7 @@ public class LargeModelController {
                 .contentType(MediaType.APPLICATION_STREAM_JSON)
                 .body(Flux.create(sink -> {
 
-                    String conversationIdForNext = aiConversationIdRef.get();
 
-                    // 如果为空，允许服务端生成新的 conversation_id
-                    log.info("使用 conversation_id: {}", conversationIdForNext);
 
 
                     largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId)
@@ -85,8 +82,7 @@ public class LargeModelController {
                                             String conversationId = jsonNode.has("conversation_id") ?
                                                     jsonNode.get("conversation_id").asText() : UUID.randomUUID().toString();
 
-                                            ConversationHistory aiMessage = new ConversationHistory();
-                                            aiMessage.setAiConversationId(conversationId); // 确保不为空
+
 
                                             String messageId = jsonNode.has("message_id") ?
                                                     jsonNode.get("message_id").asText() : null;
@@ -100,12 +96,14 @@ public class LargeModelController {
                                             log.info("session_id: {}, conversation_id: {}", sessionId, conversationId);
 
                                             // 构造实体类并保存
-                                            aiMessage = new ConversationHistory();
+                                            final ConversationHistory aiMessage = new ConversationHistory();
+
                                             aiMessage.setId(UUID.randomUUID().toString());
                                             aiMessage.setSessionId(sessionId);
                                             aiMessage.setRole("assistant");
                                             aiMessage.setContent(answerStr); // 或只保存纯文本部分
                                             aiMessage.setUserId(userId);
+
                                             aiMessage.setAiConversationId(conversationId);
                                             aiMessage.setAiMessageId(messageId);
                                             aiMessage.setCreateTime(java.time.LocalDateTime.now());
