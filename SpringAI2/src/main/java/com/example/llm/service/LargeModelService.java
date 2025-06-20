@@ -62,12 +62,7 @@ public class LargeModelService {
     }
 
 
-
-
-
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-
 
     /**
      * 流式模式

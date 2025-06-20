@@ -30,7 +30,7 @@
         </div>
 
 
-      <div class="conversation-list">
+      <div class="conversation-list"  ref="conversationList" @scroll="handleSidebarScroll">
         <div  v-for="(conversation, index) in conversations" :key="conversation.id"
               :class="['conversation-item',{ active: currentConversationId === conversation.id },
               conversation.modelType ? 'model-type-' + conversation.modelType : '']"
@@ -116,6 +116,8 @@ export default {
         ocr: '#fff8e6',    // 黄色系
         memory: '#ffe6f0'  // 粉色系
       },
+      sidebarScrollTop: 0, // 存储侧边栏滚动位置
+      autoScrollEnabled: true, // 是否启用自动滚动
 
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
@@ -134,6 +136,29 @@ export default {
       this.currentModel = modelType;
       this.createNewChat(); // 👈 切换模型时自动新建对话
       // 可选：重置对话等操作
+    },
+
+    handleSidebarScroll(event) {
+      const container = event.target;
+      this.sidebarScrollTop = container.scrollTop;
+
+      // 判断是否已滚动到底部
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 5;
+      this.autoScrollEnabled = isAtBottom;
+    },
+
+    scrollToBottomOfSidebar() {
+      this.$nextTick(() => {
+        const listContainer = this.$refs.conversationList;
+        if (!listContainer) return;
+
+        if (this.autoScrollEnabled) {
+          listContainer.scrollTop = listContainer.scrollHeight;
+        } else {
+          // 如果用户没有在底部，则恢复之前的滚动位置
+          listContainer.scrollTop = this.sidebarScrollTop;
+        }
+      });
     },
 
 
@@ -336,6 +361,8 @@ export default {
       this.conversations.push(newConversation);
       this.switchConversation(newSessionId);
       this.userId = newUserId; // 设置固定 userId
+
+      this.scrollToBottomOfSidebar(); // 新建后尝试滚动
     },
 
     switchConversation(conversationId) {
@@ -868,6 +895,25 @@ body {
   /*background-color: #f9f9f9;*/
   border-radius: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.conversation-list {
+  overflow-y: auto;
+  max-height: calc(100vh - 160px); /* 根据布局调整 */
+}
+
+/* 滚动条样式 */
+.conversation-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-list::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.conversation-list::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 
