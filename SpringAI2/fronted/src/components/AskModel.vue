@@ -9,6 +9,28 @@
         </button>
       </div>
 
+
+<!--        新增几个按钮，分别是AI助手大模型、数据分析大模型、OCR工作流大模型、记忆助手大模型-->
+        <div class="model-selector">
+          <button type="primary" plain @click="switchModel('ai')">
+            <span class="model-icon"></span>
+            AI助手大模型
+          </button>
+          <button type="primary" plain @click="switchModel('data')">
+            <span class="model-icon"></span>
+            数据分析大模型
+          </button>
+          <button type="primary" plain @click="switchModel('ocr')">
+            <span class="model-icon"></span>
+            OCR工作流大模型
+          </button>
+          <button type="primary" plain @click="switchModel('memory')">
+            <span class="model-icon"></span>
+            记忆助手大模型
+          </button>
+        </div>
+
+
       <div class="conversation-list">
         <div v-for="(conversation, index) in conversations" :key="conversation.id"
           :class="['conversation-item', { active: currentConversationId === conversation.id }]"
@@ -774,6 +796,53 @@ body {
   background-color: #eaeaea;
   border: none;
   margin: 2em 0;
+}
+
+/**
+选择不同模型的按钮样式
+ */
+.model-selector button {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.3s ease;
+}
+
+.model-selector button:hover {
+  background-color: #f5f5f5;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.model-selector button:active {
+  transform: translateY(0);
+}
+
+.model-selector {
+  padding: 16px;
+  /*background-color: #f9f9f9;*/
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 
