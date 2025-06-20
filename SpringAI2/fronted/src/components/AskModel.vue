@@ -538,12 +538,14 @@ body {
   /*background: #1b1b82;*/
   border-color: transparent;
   box-shadow: none;
+  background-color: powderblue;
 }
 
 .conversation-item.active,
 .new-chat-btn {
   /*background: #b51313;*/
   box-shadow: none;
+
 }
 
 
