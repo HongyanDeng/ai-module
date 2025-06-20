@@ -37,6 +37,7 @@ public class LargeModelController {
         String message = (String) request.get("message");
         String sessionId = (String) request.get("sessionId");
         String userId = (String) request.get("userId");
+        String modelType = (String) request.get("modelType");
 
         List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(sessionId);
 
@@ -57,10 +58,7 @@ public class LargeModelController {
                 .contentType(MediaType.APPLICATION_STREAM_JSON)
                 .body(Flux.create(sink -> {
 
-
-
-
-                    largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId)
+                    largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId,modelType)
                             .subscribe(
                                     chunk -> {
                                         sink.next(chunk); // 发送给前端

@@ -108,6 +108,8 @@ export default {
       conversationId: '',  // 👈 新增
       currentConversationId: null,
       userId: null, // 👈 新增字段，用于保存固定 userId
+      currentModel: 'memory', // 默认模型（可选值：ai, data, ocr, memory）
+
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
       ]
@@ -117,6 +119,17 @@ export default {
     renderMarkdown(text) {
       return { __html: DOMPurify.sanitize(marked.parse(text)) };
     },
+    /**
+     * 切换模型
+     * @returns {Promise<void>}
+     */
+    switchModel(modelType) {
+      this.currentModel = modelType;
+      this.createNewChat(); // 👈 切换模型时自动新建对话
+      // 可选：重置对话等操作
+    },
+
+
     // async askModel() {
     //   if (!this.question) return;
     //
@@ -194,7 +207,8 @@ export default {
             message: q,
             sessionId: this.sessionId || '',
             userId: this.userId || '', // 👈 使用固定 userId
-            conversationId: this.conversationId || ''  // 新增字段
+            conversationId: this.conversationId || '' , // 新增字段
+            modelType: this.currentModel // 👈 新增字段
           })
         });
 
