@@ -9,7 +9,6 @@
         </button>
       </div>
 
-<!--        新增几个按钮，分别是AI助手大模型、数据分析大模型、OCR工作流大模型、记忆助手大模型-->
         <div class="model-selector">
           <button type="primary" plain @click="switchModel('ai')" style="background-color:#e6f7ff ">
             <span class="model-icon"></span>
@@ -47,9 +46,6 @@
               </button>
 
             </div>
-            <!--
-            <div class="conversation-time">{{ formatTime(conversation.createdAt) }}</div>
-          -->
           </div>
 
 
@@ -64,9 +60,6 @@
           <div v-if="msg.role === 'ai'" class="ai-answer">
             <div class="ai-text" v-html="renderMarkdown(msg.text).__html"></div>
 
-          <!--
-            <span class="ai-text">{{ msg.text }}</span>
-            -->
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
 
@@ -92,7 +85,6 @@
 </template>
 
 <script>
-import axios from 'axios';
 import * as marked from 'marked';
 
 import DOMPurify from 'dompurify';
@@ -106,18 +98,18 @@ export default {
       loading: false,
       sessionId: '',
       conversations: [],
-      conversationId: '',  // 👈 新增
+      conversationId: '',
       currentConversationId: null,
-      userId: null, // 👈 新增字段，用于保存固定 userId
+      userId: null,
       currentModel: 'memory', // 默认模型（可选值：ai, data, ocr, memory）
       modelColorMap: {
-        ai: '#e6f7ff',     // 蓝色系
-        data: '#f0fff0',   // 绿色系
-        ocr: '#fff8e6',    // 黄色系
-        memory: '#ffe6f0'  // 粉色系
+        ai: '#e6f7ff',
+        data: '#f0fff0',
+        ocr: '#fff8e6',
+        memory: '#ffe6f0'
       },
-      sidebarScrollTop: 0, // 存储侧边栏滚动位置
-      autoScrollEnabled: true, // 是否启用自动滚动
+      sidebarScrollTop: 0,
+      autoScrollEnabled: true,
 
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
@@ -130,12 +122,10 @@ export default {
     },
     /**
      * 切换模型
-     * @returns {Promise<void>}
      */
     switchModel(modelType) {
       this.currentModel = modelType;
-      this.createNewChat(); // 👈 切换模型时自动新建对话
-      // 可选：重置对话等操作
+      this.createNewChat(); //  切换模型时自动新建对话
     },
 
     handleSidebarScroll(event) {
@@ -161,68 +151,6 @@ export default {
       });
     },
 
-
-    // async askModel() {
-    //   if (!this.question) return;
-    //
-    //   const userMsg = { role: 'user', text: this.question };
-    //   this.currentMessages.push(userMsg);
-    //   this.loading = true;
-    //   const q = this.question;
-    //   this.question = '';
-    //
-    //   try {
-    //     const response = await axios.post('http://localhost:8080/api/llm/ask', {
-    //       message: q,
-    //       sessionId: this.sessionId || '',
-    //       //sessionId: this.sessionId,
-    //       userId: 'user-' + Date.now()
-    //       //userId:this.userId,
-    //     });
-    //
-    //     let aiResponse = '';
-    //     if (response.data && response.data.answer) {
-    //       aiResponse = response.data.answer;
-    //       // 处理换行符
-    //       aiResponse = aiResponse.replace(/\\n/g, '\n');
-    //       // 移除末尾的 "//"
-    //       if (aiResponse.endsWith("//")) {
-    //         aiResponse = aiResponse.substring(0, aiResponse.length() - 2);
-    //       }
-    //     } else if (response.data && response.data.error) {
-    //       aiResponse = '错误: ' + response.data.error;
-    //     } else {
-    //       aiResponse = '抱歉，我无法理解这个回答。';
-    //     }
-    //
-    //     this.currentMessages.push({ role: 'ai', text: aiResponse });
-    //
-    //     // 更新当前对话的标题（使用第一条用户消息）
-    //     this.updateConversationTitle(q);
-    //     await this.$nextTick();
-    //     this.scrollToBottom();
-    //   } catch (error) {
-    //     console.error('Error:', error);
-    //     let errorMessage = '请求失败';
-    //     if (error.response) {
-    //       if (error.response.data && error.response.data.error) {
-    //         errorMessage = error.response.data.error;
-    //       } else if (error.response.data && error.response.data.message) {
-    //         errorMessage = error.response.data.message;
-    //       } else {
-    //         errorMessage = error.response.data || error.response.statusText;
-    //       }
-    //     } else if (error.message) {
-    //       errorMessage = error.message;
-    //     }
-    //     this.currentMessages.push({ role: 'ai', text: errorMessage });
-    //   } finally {
-    //     this.loading = false;
-    //   }
-    // },
-
-
-
     async askModel() {
       if (!this.question) return;
 
@@ -241,9 +169,9 @@ export default {
           body: JSON.stringify({
             message: q,
             sessionId: this.sessionId || '',
-            userId: this.userId || '', // 👈 使用固定 userId
-            conversationId: this.conversationId || '' , // 新增字段
-            modelType: this.currentModel // 👈 新增字段
+            userId: this.userId || '', // 使用固定 userId
+            conversationId: this.conversationId || '' ,
+            modelType: this.currentModel
           })
         });
 
@@ -310,8 +238,8 @@ export default {
             if (parsed.event === 'message') {
               aiResponse += parsed.answer;
               this.currentMessages[aiMessageIndex].text = aiResponse;
-              // 👇 如果有返回新的 conversation_id，则更新到前端
-              // 👇 只有当 conversation_id 存在且非空时才更新
+              //  如果有返回新的 conversation_id，则更新到前端
+              //  只有当 conversation_id 存在且非空时才更新
               if (parsed.conversation_id && parsed.conversation_id.trim() !== '') {
                 this.conversationId = parsed.conversation_id;
               }
@@ -355,7 +283,7 @@ export default {
         title: '新对话',
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
         createdAt: new Date(),
-        modelType: this.currentModel // 👈 新增字段，记录当前模型类型
+        modelType: this.currentModel // 记录当前模型类型
       };
 
       this.conversations.push(newConversation);
@@ -379,7 +307,7 @@ export default {
         // 存储到当前对话对象中，避免下次切换回来再变
         conversation.userId = this.userId;
 
-        // 👇 新增：将历史对话中的 ai_conversation_id 同步到当前对话状态中
+        // 将历史对话中的 ai_conversation_id 同步到当前对话状态中
         const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
         this.conversationId = lastAIMessage?.conversationId || '';
       }
@@ -436,7 +364,7 @@ export default {
       title: '新对话',
       messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
       createdAt: new Date(),
-      userId: initialUserId // 👈 初始化 userId
+      userId: initialUserId // 初始化 userId
     };
 
     this.conversations.push(initialConversation);
@@ -485,7 +413,6 @@ body {
 }
 
 .sidebar {
-  /**采用绝对定位 */
   position: fixed;
   left: 0;
   top: 0;
@@ -499,8 +426,6 @@ body {
 
 .sidebar-header {
   padding: 16px;
-  /*background: #f7f7f8;*/
-  /*border-bottom: 1px solid #e6e6e6;*/
 }
 
 .sidebar-header h2 {
@@ -569,27 +494,20 @@ body {
 .chat-input-bar input {
   width: 765px;
   padding: 5px 10px;
-  /* 顶部和底部增加5px内边距，左右增加10px内边距 */
   height: 40px;
-  /* 设置内容区域高度为40px，加上5px上下内边距，总高度为50px */
   line-height: 1.2;
-  /* 设置行高为正常值，使其与字体大小匹配，避免垂直居中 */
   vertical-align: top;
-  /* 明确将内容垂直向上对齐 */
   border: 0px solid #e6e6e6;
   border-radius: 6px;
   background: #ffffff;
   margin-left: 0px;
   margin-top: 0;
   transition: box-shadow 0.3s ease;
-  /* 添加过渡效果 */
 }
 
 .chat-input-bar input:focus {
   box-shadow: 0 0 0px rgba(79, 140, 255, 0.5);
-  /* 点击时的蓝色阴影效果 */
   outline: none;
-  /* 移除默认的outline样式 */
 }
 
 .conversation-item {
@@ -602,14 +520,12 @@ body {
   font-size: 16px;
 }
 
-/**键入对话颜色 */
 .conversation-item:hover {
   background: #ffffff;
   transform: none;
 }
 
 .conversation-item.active {
-  /*background: #1b1b82;*/
   border-color: transparent;
   box-shadow: none;
   background-color: powderblue;
@@ -617,15 +533,12 @@ body {
 
 .conversation-item.active,
 .new-chat-btn {
-  /*background: #b51313;*/
   box-shadow: none;
 
 }
 
-
 /**用户提问框 */
 .user-question {
-  /**采用flex布局实现右对齐 */
   display: flex;
   justify-content: flex-end;
   max-width: 100%;
@@ -647,7 +560,6 @@ body {
 
 /**大模型回答框 */
 .ai-answer {
-  /**采用flex布局实现左对齐 */
   display: flex;
   justify-content: flex-start;
   max-width: 100%;
@@ -689,7 +601,6 @@ body {
   width: 765px;
   padding: 10px;
   height: 80px;
-  /* 固定高度 */
   line-height: 1.5;
   border: 0px solid #e6e6e6;
   border-radius: 6px;
@@ -697,7 +608,6 @@ body {
   margin-left: 0;
   margin-top: 0;
   resize: none;
-  /* 禁止手动调整大小 */
   transition: box-shadow 0.3s ease;
 }
 
@@ -706,34 +616,12 @@ body {
   box-shadow: 0 0 5px rgba(255, 255, 255, 1);
 }
 
-/*
-.ai-text h1, .ai-text h2, .ai-text h3 {
-  color: #333;
-}
-
-.ai-text ul, .ai-text ol {
-  margin-left: 20px;
-}
-
-.ai-text code {
-  background-color: #f4f4f4;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.ai-text pre {
-  background-color: #f8f8f8;
-  padding: 10px;
-  overflow-x: auto;
-}
-*/
-
 .ai-text {
   font-size: 15px;
   line-height: 1.6;
   color: #333;
   word-wrap: break-word;
-  white-space: pre-wrap; /* 保留换行符 */
+  white-space: pre-wrap;
   hyphens: auto;
 }
 
@@ -850,9 +738,7 @@ body {
   margin: 2em 0;
 }
 
-/**
-选择不同模型的按钮样式
- */
+/**选择不同模型的按钮样式*/
 .model-selector button {
   width: 100%;
   padding: 12px 16px;
@@ -892,14 +778,13 @@ body {
 
 .model-selector {
   padding: 16px;
-  /*background-color: #f9f9f9;*/
   border-radius: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .conversation-list {
   overflow-y: auto;
-  max-height: calc(100vh - 160px); /* 根据布局调整 */
+  max-height: calc(100vh - 160px);
 }
 
 /* 滚动条样式 */

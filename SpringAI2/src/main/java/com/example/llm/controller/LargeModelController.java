@@ -41,7 +41,6 @@ public class LargeModelController {
 
         List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(sessionId);
 
-        // 👇 使用 AtomicReference 包装可变变量
         AtomicReference<String> aiConversationIdRef = new AtomicReference<>("");
 
         if (!history.isEmpty()) {
@@ -51,7 +50,6 @@ public class LargeModelController {
             }
         }
 
-        // 👇 收集完整的 AI 回答内容
         AtomicReference<String> fullAnswer = new AtomicReference<>("");
 
         return ResponseEntity.ok()
@@ -70,7 +68,6 @@ public class LargeModelController {
                                     },
                                     () -> {
                                         try {
-                                            // 👇 在这里可以安全地使用 fullAnswer 和 aiConversationIdRef
                                             String answerStr = fullAnswer.get();
 
                                             // 解析 JSON 获取 conversation_id 和 message_id
