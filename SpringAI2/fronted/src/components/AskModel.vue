@@ -198,6 +198,13 @@ export default {
           text: `文件已上传，ID: ${result.id}。你可以开始提问了。`
         });
 
+        // ✅ 自动提问
+        const question = "我上传文件的id是："+result.id;
+        this.question = question;
+
+        // ✅ 自动触发提问
+        await this.askModel();
+
       } catch (error) {
         console.error('Error uploading file:', error);
         this.currentMessages.push({
