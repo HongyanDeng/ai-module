@@ -76,7 +76,12 @@
       <div class="chat-input-bar">
         <textarea v-model="question" placeholder="询问任何问题" @keyup.enter="askModel"></textarea>
         <div class="send-button">
+          <input type="file" @change="sendFile" />
+
+          <!--
           <button class="send-file" @click="sendFile">＋</button>
+          -->
+
           <button class="ask-model" @click="askModel">⬆</button>
         </div>
       </div>
@@ -88,6 +93,10 @@
 import * as marked from 'marked';
 
 import DOMPurify from 'dompurify';
+
+import {mangle} from 'marked-mangle';
+
+marked.use(mangle());
 
 
 export default {
@@ -110,7 +119,7 @@ export default {
       },
       sidebarScrollTop: 0,
       autoScrollEnabled: true,
-
+      fileID:null,//文件 ID
       currentMessages: [
         { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
       ]
@@ -151,6 +160,55 @@ export default {
       });
     },
 
+    /*上传文件到模型*/
+    async sendFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('user', this.userId);
+
+      try {
+        const response = await fetch('http://localhost:8080/api/llm/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const result = await response.json();
+        console.log('File uploaded:', result);
+
+        // 将文件 ID 保存到组件数据中
+        this.fileId = result.id;
+        alert('文件上传成功！可以开始提问');
+
+        // 可选：将文件信息发送给 AI 模型
+        /*
+        this.currentMessages.push({
+          role: 'user',
+          text: `文件已上传: ${result.name} (ID: ${result.id})`,
+        });*/
+        // 可选：显示一条提示消息
+        this.currentMessages.push({
+          role: 'ai',
+          text: `文件已上传，ID: ${result.id}。你可以开始提问了。`
+        });
+
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        this.currentMessages.push({
+          role: 'ai',
+          text: '文件上传失败: ' + error.message,
+        });
+      }
+    },
+
+
+    /*模型问答*/
     async askModel() {
       if (!this.question) return;
 
@@ -171,9 +229,11 @@ export default {
             sessionId: this.sessionId || '',
             userId: this.userId || '', // 使用固定 userId
             conversationId: this.conversationId || '' ,
-            modelType: this.currentModel
+            modelType: this.currentModel,
+            fileId: this.fileId || '', // 包含文件 ID（如果有）
           })
         });
+        console.log('当前 fileId:', this.fileId);
 
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -299,7 +359,8 @@ export default {
 
       if (conversation) {
         this.currentMessages = [...conversation.messages];
-        this.sessionId = 'session-' + conversationId;
+        //this.sessionId = 'session-' + conversationId;
+        this.sessionId = conversationId;
 
         // 如果该对话已存在 userId，则复用；否则生成新的
         this.userId = conversation.userId || 'user-' + Date.now();
@@ -463,6 +524,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+  /*height: 600px;*/
   background: #ffffff;
   padding: 0;
   margin-left: 90px;

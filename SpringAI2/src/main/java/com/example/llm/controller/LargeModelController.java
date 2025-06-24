@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class LargeModelController {
         String sessionId = (String) request.get("sessionId");
         String userId = (String) request.get("userId");
         String modelType = (String) request.get("modelType");
+        String fileId = (String) request.get("fileId");
 
         List<ConversationHistory> history = conversationService.getConversationHistoryBySessionId(sessionId);
 
@@ -56,7 +58,7 @@ public class LargeModelController {
                 .contentType(MediaType.APPLICATION_STREAM_JSON)
                 .body(Flux.create(sink -> {
 
-                    largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId,modelType)
+                    largeModelService.streamLargeModelResponse(message, history, aiConversationIdRef.get(), userId,modelType,fileId)
                             .subscribe(
                                     chunk -> {
                                         sink.next(chunk); // 发送给前端
@@ -88,7 +90,7 @@ public class LargeModelController {
                                              */
                                             log.info("准备保存 AI 回答：{}", answerStr);
                                             log.info("回答长度：{}", answerStr.length());
-                                            log.info("session_id: {}, conversation_id: {}", sessionId, conversationId);
+                                            log.info("session_id: {}, conversation_id: {},file_id{}", sessionId, conversationId,fileId);
 
                                             // 构造实体类并保存
                                             final ConversationHistory aiMessage = new ConversationHistory();
@@ -103,6 +105,11 @@ public class LargeModelController {
                                             aiMessage.setAiMessageId(messageId);
                                             aiMessage.setCreateTime(java.time.LocalDateTime.now());
 
+                                            // ✅ 新增：如果请求中包含 fileId，则保存到 content 字段或新建字段
+                                            if (fileId != null && !fileId.isEmpty()) {
+                                                aiMessage.setFileId(fileId);
+                                            }
+
                                             log.info("开始保存到数据库...");
                                             conversationService.saveConversation(aiMessage);
                                             log.info("保存完成！");
@@ -116,5 +123,20 @@ public class LargeModelController {
                             );
                 }));
     }
+
+
+    /**
+     * 文件上传
+     * @param file
+     * @param user
+     * @return
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<Map<String, Object>> uploadFile(@RequestParam("file") MultipartFile file,
+                                                          @RequestParam("user") String user) {
+        Map<String, Object> response = largeModelService.uploadFile(file, user);
+        return ResponseEntity.ok(response);
+    }
+
 
 }

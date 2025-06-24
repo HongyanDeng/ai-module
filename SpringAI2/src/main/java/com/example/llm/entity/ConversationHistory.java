@@ -58,4 +58,7 @@ public class ConversationHistory {
     @Column(name = "create_time", nullable = false, updatable = false)
     private LocalDateTime createTime;
 
+    @Column(name = "file_id")
+    private String fileId;
+
 }
