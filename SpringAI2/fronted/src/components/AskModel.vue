@@ -30,11 +30,18 @@
 
 
       <div class="conversation-list"  ref="conversationList" @scroll="handleSidebarScroll">
-        <div  v-for="(conversation, index) in conversations" :key="conversation.id"
-              :class="['conversation-item',{ active: currentConversationId === conversation.id },
+        <div  v-for="(conversation, index) in conversations"
+              :key="conversation.id"
+              :class="[
+                  'conversation-item',
+                  { active: currentConversationId === conversation.id },
+                  { clicked:clickedConversationId === conversation.id},
               conversation.modelType ? 'model-type-' + conversation.modelType : '']"
               :style="{ backgroundColor: modelColorMap[conversation.modelType] }"
-              @click="switchConversation(conversation.id)">
+              @click="switchConversation(conversation.id)"
+              @mouseenter="setHoveredConversation(conversation.id)"
+              @mouseleave="clearHoveredConversation"
+        >
           <div class="conversation-info">
             <div class="conversation-title">
               {{ conversation.title || '新对话' }}
@@ -117,6 +124,8 @@ export default {
         ocr: '#fff8e6',
         memory: '#ffe6f0'
       },
+      clickedConversationId: null,
+      hoveredConversationId: null,
       sidebarScrollTop: 0,
       autoScrollEnabled: true,
       fileID:null,//文件 ID
@@ -126,6 +135,13 @@ export default {
     };
   },
   methods: {
+    setHoveredConversation(id) {
+      this.hoveredConversationId = id;
+    },
+    clearHoveredConversation() {
+      this.hoveredConversationId = null;
+    },
+
     renderMarkdown(text) {
       return { __html: DOMPurify.sanitize(marked.parse(text)) };
     },
@@ -609,10 +625,12 @@ body {
   transform: none;
 }
 
-.conversation-item.active {
+.conversation-item.active,
+.conversation-item.clicked {
   border-color: transparent;
   box-shadow: none;
-  background-color: powderblue;
+  /*background-color: powderblue;*/
+  background-color: #99ccff !important; /* 更深的蓝色 */
 }
 
 .conversation-item.active,
