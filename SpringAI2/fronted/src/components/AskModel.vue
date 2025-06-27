@@ -180,10 +180,19 @@ export default {
         }
 
         const result = await response.json();
+
         console.log('File uploaded:', result);
 
+        // ✅ 设置当前对话的 fileId
+        const currentConversation = this.conversations.find(c => c.id === this.currentConversationId);
+        if (currentConversation) {
+          currentConversation.fileId = result.id;
+          this.fileId = result.id; // 同步到全局变量
+        }
+
+
         // 将文件 ID 保存到组件数据中
-        this.fileId = result.id;
+        //this.fileId = result.id;
         alert('文件上传成功！可以开始提问');
 
         // 可选：将文件信息发送给 AI 模型
@@ -198,11 +207,11 @@ export default {
           text: `文件已上传，ID: ${result.id}。你可以开始提问了。`
         });
 
-        // ✅ 自动提问
+        // 自动提问
         const question = "我上传文件的id是："+result.id;
         this.question = question;
 
-        // ✅ 自动触发提问
+        // 自动触发提问
         await this.askModel();
 
       } catch (error) {
@@ -350,12 +359,15 @@ export default {
         title: '新对话',
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
         createdAt: new Date(),
-        modelType: this.currentModel // 记录当前模型类型
+        modelType: this.currentModel, // 记录当前模型类型
+        fileId: null
       };
 
       this.conversations.push(newConversation);
       this.switchConversation(newSessionId);
       this.userId = newUserId; // 设置固定 userId
+
+      this.fileId = null;
 
       this.scrollToBottomOfSidebar(); // 新建后尝试滚动
     },
@@ -378,6 +390,9 @@ export default {
         // 将历史对话中的 ai_conversation_id 同步到当前对话状态中
         const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
         this.conversationId = lastAIMessage?.conversationId || '';
+
+        //  切换对话时恢复 fileId
+        this.fileId = conversation.fileId || null;
       }
     },
 

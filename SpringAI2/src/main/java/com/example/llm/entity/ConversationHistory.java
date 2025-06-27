@@ -7,7 +7,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @Entity
@@ -21,13 +20,13 @@ public class ConversationHistory {
     @Column(name = "id", columnDefinition = "VARCHAR(255)", nullable = false)
     private String id;
 
-    @Column(name = "conversation_id") // This will now store the AI's ongoing conversation ID
+    @Column(name = "conversation_id")
     private String conversationId;
 
-    @Column(name = "ai_conversation_id") // New field for AI's ongoing conversation ID
+    @Column(name = "ai_conversation_id")
     private String aiConversationId;
 
-    @Column(name = "ai_message_id") // New field for AI's message ID
+    @Column(name = "ai_message_id")
     private String aiMessageId;
 
     @Column(name = "session_id")

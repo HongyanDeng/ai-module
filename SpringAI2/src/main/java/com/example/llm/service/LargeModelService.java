@@ -121,11 +121,12 @@ public class LargeModelService {
         apiRequestBody.put("user", userId);
         apiRequestBody.put("model_type", modelType);
 
-        // ✅ 如果有 fileId，就加进去
+        //  如果有 fileId，就加进去
         if (fileId != null && !fileId.isEmpty()) {
             List<Map<String, Object>> files = new ArrayList<>();
             Map<String, Object> file = new HashMap<>();
-            file.put("type", "image");
+            file.put("type","image");
+            //file.put("type", "document");
             file.put("transfer_method", "local_file");
             file.put("upload_file_id", fileId);
             files.add(file);
@@ -134,7 +135,6 @@ public class LargeModelService {
         log.info("请求参数 -> {}", apiRequestBody);
         return apiRequestBody;
     }
-
 
     /**
      * 实现上传文件方法
@@ -175,5 +175,4 @@ public class LargeModelService {
             throw new RuntimeException("文件上传失败", e);
         }
     }
-
 }

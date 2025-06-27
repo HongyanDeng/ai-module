@@ -79,11 +79,8 @@ public class LargeModelController {
                                             String conversationId = jsonNode.has("conversation_id") ?
                                                     jsonNode.get("conversation_id").asText() : UUID.randomUUID().toString();
 
-
-
                                             String messageId = jsonNode.has("message_id") ?
                                                     jsonNode.get("message_id").asText() : null;
-
 
                                             /**
                                              * 检查是否真的存入数据库
@@ -105,7 +102,7 @@ public class LargeModelController {
                                             aiMessage.setAiMessageId(messageId);
                                             aiMessage.setCreateTime(java.time.LocalDateTime.now());
 
-                                            // ✅ 新增：如果请求中包含 fileId，则保存到 content 字段或新建字段
+                                            // 如果请求中包含 fileId，则保存到 content 字段或新建字段
                                             if (fileId != null && !fileId.isEmpty()) {
                                                 aiMessage.setFileId(fileId);
                                             }
@@ -137,6 +134,4 @@ public class LargeModelController {
         Map<String, Object> response = largeModelService.uploadFile(file, user);
         return ResponseEntity.ok(response);
     }
-
-
 }
