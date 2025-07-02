@@ -78,11 +78,11 @@ public class LargeModelService {
     }
 
     private Map<String, Object> buildRequestBody(String query, List<Map<String, Object>> history,
-                                                 String conversationId, String userId,
-                                                 String fileId) {
+                                                 String conversationId, String userId, String fileId) {
         Map<String, Object> apiRequestBody = new HashMap<>();
         List<Map<String, Object>> messages = new ArrayList<>();
 
+        // 添加历史对话内容到 messages 列表中
         for (Map<String, Object> h : history) {
             Map<String, Object> msg = new HashMap<>();
             msg.put("role", h.get("role"));     // 获取角色
@@ -90,6 +90,11 @@ public class LargeModelService {
             messages.add(msg);
         }
 
+        // 添加当前用户提问
+        Map<String, Object> currentMessage = new HashMap<>();
+        currentMessage.put("role", "user");
+        currentMessage.put("content", query);
+        messages.add(currentMessage);
 
         apiRequestBody.put("chatId", conversationId); // 使用 conversationId 作为 chatId
         apiRequestBody.put("stream", true);
@@ -105,6 +110,7 @@ public class LargeModelService {
 
         return apiRequestBody;
     }
+
 
     /**
      * 实现上传文件方法

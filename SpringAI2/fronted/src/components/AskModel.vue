@@ -66,11 +66,6 @@
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
 
-
-            <pre style="color: red;">Debug Output: {{ msg.text }}</pre>
-
-
-
             <!-- 原有 Markdown 渲染 -->
             <div class="ai-text" v-html="renderMarkdown(msg.text).__html"></div>
 
@@ -285,7 +280,6 @@ export default {
             chatId: this.sessionId || '',
             stream: true,
             detail: true,
-            responseChatItemId: this.responseChatItemId,
 
             variables: {
               uid: this.userId || '',
@@ -404,33 +398,33 @@ export default {
       this.scrollToBottomOfSidebar(); // 新建后尝试滚动
     },
 
-    switchConversation(conversationId) {
+    async switchConversation(conversationId) {
       this.currentConversationId = conversationId;
       const conversation = this.conversations.find(c => c.id === conversationId);
 
       if (conversation) {
-        this.currentMessages = [...conversation.messages];
-        //this.sessionId = 'session-' + conversationId;
+        // 加载历史对话
+        try {
+          const response = await fetch(`http://localhost:8080/api/llm/history?sessionId=${conversationId}`);
+          const historyData = await response.json();
+
+          // 将历史记录转换为前端所需的格式
+          const historyMessages = historyData.map(item => ({
+            role: item.role.toLowerCase(),
+            text: item.content
+          }));
+
+          this.currentMessages = [...historyMessages];
+        } catch (error) {
+          console.error("Failed to load history:", error);
+          this.currentMessages = [...conversation.messages];
+        }
+
         this.sessionId = conversationId;
-
-        // 如果该对话已存在 userId，则复用；否则生成新的
-        this.userId = conversation.userId || 'user-' + Date.now();
-
-        // 存储到当前对话对象中，避免下次切换回来再变
-        conversation.userId = this.userId;
-
-        // 恢复 responseChatItemId
-        this.responseChatItemId = conversation.responseChatItemId || 'response-' + UUID();
-        conversation.responseChatItemId = this.responseChatItemId;
-
-        // 将历史对话中的 ai_conversation_id 同步到当前对话状态中
-        const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
-        this.conversationId = lastAIMessage?.conversationId || '';
-
-        //  切换对话时恢复 fileId
         this.fileId = conversation.fileId || null;
       }
     },
+
 
     deleteConversation(conversationId) {
       if (this.conversations.length <= 1) {
