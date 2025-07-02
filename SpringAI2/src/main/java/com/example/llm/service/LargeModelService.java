@@ -2,7 +2,6 @@ package com.example.llm.service;
 
 import com.example.llm.entity.ConversationHistory;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
@@ -10,9 +9,7 @@ import org.apache.hc.client5.http.entity.mime.MultipartEntityBuilder;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +24,10 @@ import reactor.core.publisher.Flux;
 @Slf4j
 @Service
 public class LargeModelService {
-    private static final String API_URL = "http://192.168.31.132:5001/v1/chat-messages";
+    //private static final String API_URL = "http://192.168.31.132:5001/v1/chat-messages";
+    private static final String API_URL="http://cppmis-app.bjyhkx.com:3000/api/v1/chat/completions";
+
+    private static final String API_KEY = "Bearer fastgpt-mlzFWJnROiDMDWt4axH5gD92vU1uFACAFADYi8mHu6kgV6p6WX3ZThvDS6";
     /**
      * 速理通AI智能助手密钥
      */
@@ -49,22 +49,6 @@ public class LargeModelService {
     //private static final String API_KEY = "Bearer app-4uxfoOAe7z77wwKDF5jHzhvs";
 
 
-
-    private String getApiKeyByModelType(String modelType) {
-        switch (modelType) {
-            case "ai":
-                return "Bearer app-2ALbJEuxLvPYaxKiHmWBQ0Ie"; // AI助手密钥
-            case "data":
-                return "Bearer app-jr6BPoFeP7xZHoTTJTOXTkTH"; // 数据分析密钥
-            case "ocr":
-                return "Bearer app-xHC0zjFEdqcyeTGhZBoEOcEa"; // OCR工作流密钥
-            case "memory":
-                return "Bearer app-4uxfoOAe7z77wwKDF5jHzhvs"; // 记忆助手密钥
-            default:
-                throw new IllegalArgumentException("未知的大模型类型: " + modelType);
-        }
-    }
-
     /**
      * 流式模式
      */
@@ -74,65 +58,51 @@ public class LargeModelService {
         this.webClient = webClientBuilder.baseUrl(API_URL).build();
     }
 
-    public Flux<String> streamLargeModelResponse(String query, List<ConversationHistory> history,
-                                                 String conversationId,String userId,
-                                                 String modelType,String fileId) {
-        String API_KEY = getApiKeyByModelType(modelType);
 
-        Map<String, Object> requestBody = buildRequestBody(query, history, conversationId, userId, modelType, fileId);
+    public Flux<String> streamLargeModelResponse(String message,  List<Map<String, Object>> fullMessages,
+                                                 String aiConversationId, String userId, String fileId) {
 
-        log.info("当前模型：{}", modelType);
-        log.info("发送流式请求到：{}", requestBody);
-        log.info("流式请求参数 -> message: {}, conversationId: {}, userId: {}",
-                query, conversationId, userId);
+        Map<String, Object> requestBody = buildRequestBody(message,fullMessages, aiConversationId, userId, fileId);
+
+
+        log.info("Streaming to model with message: {}", message);
+        log.info("Full messages sent to model: {}", fullMessages);
+
 
         return webClient.post()
                 .header(HttpHeaders.CONTENT_TYPE, "application/json")
                 .header(HttpHeaders.AUTHORIZATION, API_KEY)
                 .bodyValue(requestBody)
                 .retrieve()
-                .bodyToFlux(String.class); // 按照实际返回类型调整
+                .bodyToFlux(String.class);
     }
 
-    private Map<String, Object> buildRequestBody(String query, List<ConversationHistory> history,
-                                                 String conversationId,String userId,
-                                                 String modelType,String fileId) {
+    private Map<String, Object> buildRequestBody(String query, List<Map<String, Object>> history,
+                                                 String conversationId, String userId,
+                                                 String fileId) {
         Map<String, Object> apiRequestBody = new HashMap<>();
         List<Map<String, Object>> messages = new ArrayList<>();
 
-        for (ConversationHistory h : history) {
+        for (Map<String, Object> h : history) {
             Map<String, Object> msg = new HashMap<>();
-            msg.put("role", h.getRole());
-            msg.put("content", h.getContent());
+            msg.put("role", h.get("role"));     // 获取角色
+            msg.put("content", h.get("content")); // 获取内容
             messages.add(msg);
         }
 
-        if (messages.isEmpty()) {
-            apiRequestBody.put("inputs", new HashMap<>());
-        } else {
-            Map<String, Object> inputs = new HashMap<>();
-            inputs.put("messages", messages);
-            apiRequestBody.put("inputs", inputs);
-        }
 
-        apiRequestBody.put("query", query);
-        apiRequestBody.put("response_mode", "streaming"); // 启用流式响应
-        apiRequestBody.put("conversation_id", conversationId);
-        apiRequestBody.put("user", userId);
-        apiRequestBody.put("model_type", modelType);
+        apiRequestBody.put("chatId", conversationId); // 使用 conversationId 作为 chatId
+        apiRequestBody.put("stream", true);
+        apiRequestBody.put("detail", true);
+        apiRequestBody.put("responseChatItemId", "my_responseChatItemId"); // 可根据需求动态生成
 
-        //  如果有 fileId，就加进去
-        if (fileId != null && !fileId.isEmpty()) {
-            List<Map<String, Object>> files = new ArrayList<>();
-            Map<String, Object> file = new HashMap<>();
-            file.put("type","image");
-            //file.put("type", "document");
-            file.put("transfer_method", "local_file");
-            file.put("upload_file_id", fileId);
-            files.add(file);
-            apiRequestBody.put("files", files);
-        }
-        log.info("请求参数 -> {}", apiRequestBody);
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("uid", userId);
+        variables.put("name", "用户"); // 可根据实际情况设置名称
+        apiRequestBody.put("variables", variables);
+
+        apiRequestBody.put("messages", messages);
+
         return apiRequestBody;
     }
 

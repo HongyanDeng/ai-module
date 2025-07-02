@@ -102,6 +102,7 @@ import * as marked from 'marked';
 import DOMPurify from 'dompurify';
 
 import {mangle} from 'marked-mangle';
+import { v4 as UUID } from 'uuid';
 
 marked.use(mangle());
 
@@ -117,6 +118,7 @@ export default {
       conversationId: '',
       currentConversationId: null,
       userId: null,
+      responseChatItemId: null, // 当前对话的 responseChatItemId
       currentModel: 'memory', // 默认模型（可选值：ai, data, ocr, memory）
       modelColorMap: {
         ai: '#e6f7ff',
@@ -257,15 +259,23 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            message: q,
-            sessionId: this.sessionId || '',
-            userId: this.userId || '', // 使用固定 userId
-            conversationId: this.conversationId || '' ,
-            modelType: this.currentModel,
-            fileId: this.fileId || '', // 包含文件 ID（如果有）
+            chatId: this.sessionId || '',
+            stream: true,
+            detail: true,
+            responseChatItemId: this.responseChatItemId, // 这里使用组件中的 responseChatItemId
+
+            variables: {
+              uid: this.userId || '',
+              name: '用户',
+              sessionId: this.sessionId  // ✅ 显式传入 sessionId
+            },
+            messages: [{
+              role: 'user',
+              content: q
+            }]
           })
         });
-        console.log('当前 fileId:', this.fileId);
+
 
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -275,81 +285,24 @@ export default {
         const decoder = new TextDecoder();
         let aiResponse = '';
 
-        // 创建一个空的 AI 消息占位符
         const aiMessageIndex = this.currentMessages.length;
         this.currentMessages.push({ role: 'ai', text: '' });
 
-        let buffer = '';
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          buffer += chunk;
+          aiResponse += chunk;
 
-          // 提取所有可能的 JSON 对象
-          const jsons = [];
-          let startIdx = buffer.indexOf('{');
-          let endIdx = -1;
-          let depth = 0;
-
-          while (startIdx !== -1) {
-            for (let i = startIdx; i < buffer.length; i++) {
-              if (buffer[i] === '{') depth++;
-              else if (buffer[i] === '}') depth--;
-
-              if (depth === 0) {
-                endIdx = i;
-                break;
-              }
-            }
-
-            if (depth === 0 && endIdx > startIdx) {
-              const potentialJson = buffer.slice(startIdx, endIdx + 1);
-              try {
-                const parsed = JSON.parse(potentialJson);
-                jsons.push(parsed);
-                // 移除已解析部分
-                buffer = buffer.slice(endIdx + 1);
-                startIdx = buffer.indexOf('{');
-                depth = 0;
-              } catch (e) {
-                console.warn('Invalid JSON found:', potentialJson);
-                buffer = buffer.slice(startIdx + 1); // 跳过无法解析的部分
-                startIdx = buffer.indexOf('{');
-                break;
-              }
-            } else {
-              // 不完整 JSON，跳出循环继续接收数据
-              break;
-            }
-          }
-
-          // 处理提取出的 JSON 数据
-          for (const parsed of jsons) {
-            if (parsed.event === 'message') {
-              aiResponse += parsed.answer;
-              this.currentMessages[aiMessageIndex].text = aiResponse;
-              //  如果有返回新的 conversation_id，则更新到前端
-              //  只有当 conversation_id 存在且非空时才更新
-              if (parsed.conversation_id && parsed.conversation_id.trim() !== '') {
-                this.conversationId = parsed.conversation_id;
-              }
-            }
-          }
-
-          await this.$nextTick();
-          this.scrollToBottom();
+          this.currentMessages[aiMessageIndex].text = aiResponse;
         }
 
-        // 更新当前对话标题
         this.updateConversationTitle(q);
 
-        // 如果有错误信息，显示出来
         if (aiResponse.trim() === '') {
           this.currentMessages[aiMessageIndex].text = 'AI 返回了空结果，请稍后再试。';
         }
-
       } catch (error) {
         console.error('Error:', error);
         this.currentMessages.push({ role: 'ai', text: '请求失败: ' + error.message });
@@ -367,6 +320,8 @@ export default {
     createNewChat() {
       const newSessionId = 'session-' + Date.now();
       this.sessionId = newSessionId;
+      this.responseChatItemId = 'response-' + UUID(); // 使用 UUID 生成唯一 ID
+
 
       const newUserId = 'user-' + Date.now(); // 生成唯一 userId
 
@@ -376,7 +331,8 @@ export default {
         messages: [{ role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }],
         createdAt: new Date(),
         modelType: this.currentModel, // 记录当前模型类型
-        fileId: null
+        fileId: null,
+        responseChatItemId: this.responseChatItemId // 保存到 conversation 中
       };
 
       this.conversations.push(newConversation);
@@ -402,6 +358,10 @@ export default {
 
         // 存储到当前对话对象中，避免下次切换回来再变
         conversation.userId = this.userId;
+
+        // 恢复 responseChatItemId
+        this.responseChatItemId = conversation.responseChatItemId || 'response-' + UUID();
+        conversation.responseChatItemId = this.responseChatItemId;
 
         // 将历史对话中的 ai_conversation_id 同步到当前对话状态中
         const lastAIMessage = conversation.messages.find(m => m.role === 'ai');
