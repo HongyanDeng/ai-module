@@ -299,7 +299,11 @@ export default {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+
+
         let aiResponse = '';
+        let buffer = ''; // 缓冲区用于处理 JSON 拼接问题
+
         let isDone = false;
 
         const aiMessageIndex = this.currentMessages.length;
@@ -311,35 +315,48 @@ export default {
           if (done) isDone = true;
 
           const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk; // 将原始数据缓存到 buffer
 
-          // 过滤掉非 JSON 行（如空行、SSE event、status等）
-          const lines = chunk
-              .split('\n')
-              .map(line => line.trim())
-              .filter(line => line.startsWith('{')); // 只保留合法 JSON 行
+          // 寻找所有完整的 JSON 对象
+          const jsons = [];
+          let startIdx = -1;
+          let depth = 0;
 
-          for (const line of lines) {
-            try {
-              const parsedData = JSON.parse(line);
-
-              if (parsedData.choices && parsedData.choices.length > 0) {
-                const content = parsedData.choices[0].delta?.content;
-
-                if (content !== undefined) {
-                  aiResponse += content;
-
-                  // 更新消息内容
-                  if (aiMessageIndex >= 0 && aiMessageIndex < this.currentMessages.length) {
-                    this.currentMessages[aiMessageIndex].text = aiResponse;
-                    this.currentMessages = [...this.currentMessages]; // 强制触发 Vue 更新
-                  }
-                }
+          for (let i = 0; i < buffer.length; i++) {
+            const c = buffer[i];
+            if (c === '{' && depth++ === 0) {
+              startIdx = i;
+            }
+            if (c === '}' && --depth === 0 && startIdx !== -1) {
+              const jsonStr = buffer.slice(startIdx, i + 1);
+              try {
+                const obj = JSON.parse(jsonStr);
+                jsons.push(obj);
+                startIdx = -1;
+              } catch (e) {
+                console.error('JSON parse error:', jsonStr);
+                startIdx = -1;
+                break;
               }
-            } catch (e) {
-              console.error("JSON 解析失败:", line);
+            }
+          }
+
+          // 保留未解析的部分
+          buffer = buffer.slice(startIdx === -1 ? 0 : startIdx);
+
+          // 处理所有成功解析的 JSON 对象
+          for (const parsedData of jsons) {
+            if (parsedData.choices && parsedData.choices.length > 0) {
+              const content = parsedData.choices[0].delta?.content;
+              if (content !== undefined) {
+                aiResponse += content;
+                this.currentMessages[aiMessageIndex].text = aiResponse;
+                this.currentMessages = [...this.currentMessages]; // 强制更新 Vue
+              }
             }
           }
         }
+
 
 
 // 最终设置一次
@@ -408,13 +425,19 @@ export default {
           const response = await fetch(`http://localhost:8080/api/llm/history?sessionId=${conversationId}`);
           const historyData = await response.json();
 
-          // 将历史记录转换为前端所需的格式
-          const historyMessages = historyData.map(item => ({
-            role: item.role.toLowerCase(),
-            text: item.content
-          }));
-
-          this.currentMessages = [...historyMessages];
+          if (historyData.length > 0) {
+            // 有历史记录才替换
+            const historyMessages = historyData.map(item => ({
+              role: item.role.toLowerCase(),
+              text: item.content
+            }));
+            this.currentMessages = [...historyMessages];
+          } else {
+            // 没有历史记录则保持初始欢迎语
+            this.currentMessages = [
+              { role: 'ai', text: '你好！👋 有什么可以帮你的吗?' }
+            ];
+          }
         } catch (error) {
           console.error("Failed to load history:", error);
           this.currentMessages = [...conversation.messages];
