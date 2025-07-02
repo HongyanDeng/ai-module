@@ -65,7 +65,15 @@
       <div class="chat-content">
         <div v-for="(msg, idx) in currentMessages" :key="idx" :class="['chat', msg.role]">
           <div v-if="msg.role === 'ai'" class="ai-answer">
+
+
+            <pre style="color: red;">Debug Output: {{ msg.text }}</pre>
+
+
+
+            <!-- 原有 Markdown 渲染 -->
             <div class="ai-text" v-html="renderMarkdown(msg.text).__html"></div>
+
 
           </div>
           <div v-if="msg.role === 'user'" class="user-question">
@@ -145,8 +153,22 @@ export default {
     },
 
     renderMarkdown(text) {
-      return { __html: DOMPurify.sanitize(marked.parse(text)) };
-    },
+      if (!text) return { __html: '' };
+
+      try {
+        const html = marked.parse(text, { headerIds: false });
+        console.log('Rendered Markdown:', html); // 调试输出
+        if (!html.trim()) {
+          return { __html: '<span style="color: blue">[空内容]</span>' };
+        }
+        return { __html: DOMPurify.sanitize(html) };
+      } catch (e) {
+        console.error("Markdown render failed:", e);
+        return { __html: `<span style="color:red">[渲染失败]</span>` };
+      }
+    }
+
+    ,
     /**
      * 切换模型
      */
@@ -243,6 +265,7 @@ export default {
 
 
     /*模型问答*/
+    /*模型问答*/
     async askModel() {
       if (!this.question) return;
 
@@ -262,12 +285,12 @@ export default {
             chatId: this.sessionId || '',
             stream: true,
             detail: true,
-            responseChatItemId: this.responseChatItemId, // 这里使用组件中的 responseChatItemId
+            responseChatItemId: this.responseChatItemId,
 
             variables: {
               uid: this.userId || '',
               name: '用户',
-              sessionId: this.sessionId  // ✅ 显式传入 sessionId
+              sessionId: this.sessionId
             },
             messages: [{
               role: 'user',
@@ -276,7 +299,6 @@ export default {
           })
         });
 
-
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -284,25 +306,61 @@ export default {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let aiResponse = '';
+        let isDone = false;
 
         const aiMessageIndex = this.currentMessages.length;
         this.currentMessages.push({ role: 'ai', text: '' });
+        console.log('AI Message Index:', aiMessageIndex); // 检查索引是否正确
 
-        while (true) {
+        while (!isDone) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) isDone = true;
 
           const chunk = decoder.decode(value, { stream: true });
-          aiResponse += chunk;
 
-          this.currentMessages[aiMessageIndex].text = aiResponse;
+          // 过滤掉非 JSON 行（如空行、SSE event、status等）
+          const lines = chunk
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.startsWith('{')); // 只保留合法 JSON 行
+
+          for (const line of lines) {
+            try {
+              const parsedData = JSON.parse(line);
+
+              if (parsedData.choices && parsedData.choices.length > 0) {
+                const content = parsedData.choices[0].delta?.content;
+
+                if (content !== undefined) {
+                  aiResponse += content;
+
+                  // 更新消息内容
+                  if (aiMessageIndex >= 0 && aiMessageIndex < this.currentMessages.length) {
+                    this.currentMessages[aiMessageIndex].text = aiResponse;
+                    this.currentMessages = [...this.currentMessages]; // 强制触发 Vue 更新
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("JSON 解析失败:", line);
+            }
+          }
         }
+
+
+// 最终设置一次
+        if (aiMessageIndex >= 0 && aiMessageIndex < this.currentMessages.length) {
+          console.log("Final setting AI response:", aiResponse);
+          this.currentMessages[aiMessageIndex].text = aiResponse || "AI 返回空";
+          this.currentMessages = [...this.currentMessages];
+        }
+
+
+        // 最终更新一次，确保所有内容都显示出来
+        this.currentMessages[aiMessageIndex].text = aiResponse;
 
         this.updateConversationTitle(q);
 
-        if (aiResponse.trim() === '') {
-          this.currentMessages[aiMessageIndex].text = 'AI 返回了空结果，请稍后再试。';
-        }
       } catch (error) {
         console.error('Error:', error);
         this.currentMessages.push({ role: 'ai', text: '请求失败: ' + error.message });
@@ -310,6 +368,8 @@ export default {
         this.loading = false;
       }
     },
+
+
 
     scrollToBottom() {
       const container = this.$refs.messagesContainer || document.querySelector('.ai-markdown');

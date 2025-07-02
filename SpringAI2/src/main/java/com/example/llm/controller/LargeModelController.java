@@ -126,8 +126,9 @@ public class LargeModelController {
                     largeModelService.streamLargeModelResponse(message, fullMessages, aiConversationId, userId, fileId)
                             .subscribe(
                                     chunk -> {
-                                        sink.next("event: answer\n" +
-                                                "data: {\"id\":\"\",\"object\":\"\",\"created\":0,\"model\":\"\",\"choices\":[{\"delta\":{\"content\":\"" + chunk + "\"},\"index\":0,\"finish_reason\":null}]}\n\n");
+                                        // ✅ 直接发送原始 chunk 内容
+                                        sink.next(chunk);
+
                                         fullAnswer.updateAndGet(v -> v + chunk);
                                     },
                                     error -> {
@@ -138,13 +139,10 @@ public class LargeModelController {
                                         try {
                                             String answerStr = fullAnswer.get();
 
-                                            // 发送完成事件
-                                            sink.next("event: answer\n" +
-                                                    "data: {\"id\":\"\",\"object\":\"\",\"created\":0,\"model\":\"\",\"choices\":[{\"delta\":{},\"index\":0,\"finish_reason\":\"stop\"}]}\n\n");
-                                            sink.next("event: answer\n" +
-                                                    "data: [DONE]\n\n");
+                                            // ✅ 发送 [DONE] 标志表示完成
+                                            sink.next("[DONE]");
 
-                                            // 构造实体类并保存
+                                            // 保存对话历史...
                                             final ConversationHistory aiMessage = new ConversationHistory();
                                             aiMessage.setId(UUID.randomUUID().toString());
                                             aiMessage.setSessionId(sessionId);
@@ -163,10 +161,11 @@ public class LargeModelController {
                                             sink.complete(); // 完成流
                                         } catch (Exception e) {
                                             log.error("Error saving AI response to DB", e);
-                                            sink.complete(); // 即使失败也继续完成
+                                            sink.complete();
                                         }
                                     }
                             );
+
                 }));
 
 
