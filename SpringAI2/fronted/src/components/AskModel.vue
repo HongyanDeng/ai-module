@@ -26,6 +26,10 @@
             <span class="model-icon"></span>
             记忆助手
           </button>
+          <button type="primary" plain @click="switchModel('slt')" style="background-color: red">
+            <span class="model-icon"></span>
+            slt
+          </button>
         </div>
 
 
@@ -117,12 +121,13 @@ export default {
       conversationId: '',
       currentConversationId: null,
       userId: null,
-      currentModel: 'memory', // 默认模型（可选值：ai, data, ocr, memory）
+      currentModel: 'slt', // 默认模型（可选值：ai, data, ocr, memory）
       modelColorMap: {
         ai: '#e6f7ff',
         data: '#f0fff0',
         ocr: '#fff8e6',
-        memory: '#ffe6f0'
+        memory: '#ffe6f0',
+        slt: 'red'
       },
       clickedConversationId: null,
       hoveredConversationId: null,

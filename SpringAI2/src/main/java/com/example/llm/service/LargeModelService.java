@@ -60,6 +60,8 @@ public class LargeModelService {
                 return "Bearer app-xHC0zjFEdqcyeTGhZBoEOcEa"; // OCR工作流密钥
             case "memory":
                 return "Bearer app-4uxfoOAe7z77wwKDF5jHzhvs"; // 记忆助手密钥
+            case "slt":
+                return "Bearer app-g6bWuE3ExN70igwGYpowNFNW";//新密钥，slt
             default:
                 throw new IllegalArgumentException("未知的大模型类型: " + modelType);
         }
