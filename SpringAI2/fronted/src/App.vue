@@ -1,13 +1,14 @@
 <template>
   <div id="app">
-    <AskModel />
+    <Search />
   </div>
 </template>
 
 <script>
-import AskModel from './components/AskModel.vue';
+import Search from './components/Search.vue';
+
 export default {
-  components: { AskModel }
+  components: { Search }
 };
 </script>
 

@@ -1,7 +1,8 @@
-package com.example.llm.service;
+package com.example.llm.service.impl;
 
 import com.example.llm.entity.ConversationHistory;
 import com.example.llm.repository.ConversationHistoryRepository;
+import com.example.llm.service.ConversationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class ConversationServiceImpl implements ConversationService {
             return Collections.unmodifiableList(historyList); // 返回不可变列表
         } catch (Exception e) {
             log.error("Error fetching conversation history for session ID: {}", sessionId, e);
-            throw e; // 或者返回空列表：return Collections.emptyList();
+            throw e;
         }
     }
 
